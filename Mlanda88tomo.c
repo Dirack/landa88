@@ -1,4 +1,7 @@
-/* VFSA velocity inversion based on stereotomography and NIP tomography strategies
+/* Landa 1988 experiment: VFSA velocity inversion based on stereotomography and NIP tomography strategies
+
+This program is a reproduction of the experiment in the article 'A method for determination of velocity
+and depth from seismic reflection data' avaliable in the doc directory of this repository
 
 The initial velocity model and NIP sources position used in this program is set up using sfnipmodsetup. This program does the forward modelling by ray tracying from NIP sources to surface and gets reflection traveltime.
 
