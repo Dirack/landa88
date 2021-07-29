@@ -64,6 +64,7 @@ int main(int argc, char* argv[])
 	int nsz; // Dimension of sz vector
 	float* sv; // Velocity coordinates of the spline velocity function
 	float* gz; // Depth velocity gradient for backgorund velocity model
+	float ve; // Basement velocity for background velocity model
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -105,6 +106,9 @@ int main(int argc, char* argv[])
 
 	if(!sf_getfloat("v0",&v0)) v0=1.5;
 	/* Near surface velocity (Km/s) */
+
+	if(!sf_getfloat("ve",&ve)) ve=1.5;
+	/* Basement velocty (Km/s) */
 
 	if(!sf_getint("nit",&nit)) nit=1;
 	/* Number of VFSA iterations */
@@ -212,7 +216,6 @@ int main(int argc, char* argv[])
 
 		/* Function to update velocity model */
 		updateVelocityModel(n,o,d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
-		//interpolateSlowModel(n, o, d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
 
 		tmis=0;
 	
