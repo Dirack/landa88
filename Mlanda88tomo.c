@@ -13,7 +13,6 @@ The time misfit is calculated by the difference between the reflection traveltim
 #include <rsf.h>
 #include "tomography.h"
 #include "vfsacrsnh_lib.h"
-#define N_STRIPES 50
 
 void (*updateVelocityModel)(int*, /* Velocity model dimension n1=n[0] n2=n[1] */
 			   float*, /* Velocity model axis origin o1=o[0] o2=o[1] */
@@ -33,8 +32,10 @@ int main(int argc, char* argv[])
 	float d[2]; // Velocity grid sampling d[0]=d1, d[1]=d2
 	float o[2]; // Velocity grid origin o[0]=o1, o[1]=o2
 	float** s; // NIP source position (z,x)
-	float* cnew; // Temporary parameters vector used in VFSA
-	float* ots; // Optimized parameters vector
+	float* cnewv; // Temporary parameters vector used in VFSA
+	float* cnewz; // Temporary parameters vector used in VFSA
+	float* otsv; // Optimized parameters vector
+	float* otsz; // Optimized parameters vector
 	float tmis0=100; // Best time misfit
 	float otmis=0; // Best time misfit
 	float deltaE; // Delta (Metrópolis criteria in VFSA)
@@ -50,7 +51,7 @@ int main(int argc, char* argv[])
 	int nm; // Number of samples in velocity grid n1*n2
 	float* a; // Normal Ray initial angle for each NIP source
 	float* slow; // slowness model
-	int im, k, i; // loop counter
+	int im; // loop counter
 	float v; // Velocity temporary variable
 	float v0; // Near surface velocity
 	int ns; // Number of NIP sources
@@ -62,9 +63,8 @@ int main(int argc, char* argv[])
 	float *BETA; // Beta parameters vector
 	float* sz; // Depth coordinates of the spline velocity function
 	int nsz; // Dimension of sz vector
+	int nsv;
 	float* sv; // Velocity coordinates of the spline velocity function
-	float* gz; // Depth velocity gradient for backgorund velocity model
-	float ve; // Basement velocity for background velocity model
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -74,9 +74,13 @@ int main(int argc, char* argv[])
 	sf_file rnips; // RNIP parameter for each m0
 	sf_file betas; // BETA parameter for each m0
 	sf_file sz_file; // z coordinates of the cubic spline functions
-	sf_file gradz; // Depth velocity gradient for background model
+	sf_file vz_file; // v coordinates of the cubic spline functions
 	sf_file vspline; // Cubic spline velocity model
+	sf_file zspline;
 
+
+	/* Choose update function for velocity model */
+	// TODO: Offer several functions options
 	updateVelocityModel = interpolateSlowModel;
 
 	sf_init(argc,argv);
@@ -85,13 +89,14 @@ int main(int argc, char* argv[])
 	vel = sf_input("in");
 	velinv = sf_output("out");
 	vspline = sf_output("vspline");
+	zspline = sf_output("zspline");
 	angles = sf_input("anglefile");
 	m0s = sf_input("m0s");
 	t0s = sf_input("t0s");
 	rnips = sf_input("rnips");
 	betas = sf_input("betas");
 	sz_file = sf_input("sz");
-	gradz = sf_input("gz");
+	vz_file = sf_input("vz");
 
 	/* Velocity model: get 2D grid parameters */
 	if(!sf_histint(vel,"n1",n)) sf_error("No n1= in input");
@@ -106,9 +111,6 @@ int main(int argc, char* argv[])
 
 	if(!sf_getfloat("v0",&v0)) v0=1.5;
 	/* Near surface velocity (Km/s) */
-
-	if(!sf_getfloat("ve",&ve)) ve=1.5;
-	/* Basement velocty (Km/s) */
 
 	if(!sf_getint("nit",&nit)) nit=1;
 	/* Number of VFSA iterations */
@@ -127,27 +129,21 @@ int main(int argc, char* argv[])
 	sf_floatread(s[0],ndim*nshot,shots);
 	sf_fileclose(shots);
 
-	/* Cubic spline vectors */
+	/* Cubic spline vector */
 	if(!sf_histint(sz_file,"n1",&nsz)) sf_error("No n1= in sz file");
-	
-	/* Build cubic spline velocity matrix */
-	gz = sf_floatalloc(1);
-	sf_floatread(gz,1,gradz);
-	sv = sf_floatalloc(N_STRIPES*nsz);
+	if(!sf_histint(vz_file,"n1",&nsv)) sf_error("No n1= in sv file");
 
+	/* Build cubic spline velocity matrix */
+	sv = sf_floatalloc(nsv);
 	sz = sf_floatalloc(nsz);
 	sf_floatread(sz,nsz,sz_file);
-
-	/* Initialize sv, the disturbance matrix in background model */
-	for(k=0;k<N_STRIPES;k++){
-		for(i=0;i<nsz;i++){
-			sv[(k*nsz)+i]=0.0;
-		}
-	}
+	sf_floatread(sv,nsv,vz_file);
 
 	/* VFSA parameters vectors */
-	cnew = sf_floatalloc(N_STRIPES*nsz);
-	ots = sf_floatalloc(N_STRIPES*nsz);
+	cnewv = sf_floatalloc(nsv);
+	cnewz = sf_floatalloc(nsz); 
+	otsv = sf_floatalloc(nsv);
+	otsz = sf_floatalloc(nsz);
 
 	/* Anglefile: get initial emergence angle */
 	if(!sf_histint(angles,"n1",&ns)) sf_error("No n1= in anglefile");
@@ -202,8 +198,8 @@ int main(int argc, char* argv[])
 	sf_putfloat(velinv,"o3",0);
 
 	/* cubic spline velocity matrix */
-	sf_putint(vspline,"n1",nsz);
-	sf_putint(vspline,"n2",N_STRIPES);
+	sf_putint(vspline,"n1",nsv);
+	sf_putint(zspline,"n1",nsz);
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
 	for (q=0; q<nit; q++){
@@ -212,10 +208,10 @@ int main(int argc, char* argv[])
 		temp=getVfsaIterationTemperature(q,c0,temp0);
 						
 		/* parameter disturbance */
-		disturbParameters(temp,cnew,sv,nsz*N_STRIPES,0.001);
+		//disturbParameters(temp,cnew,sv,nsz*N_STRIPES,0.001);
 
 		/* Function to update velocity model */
-		updateVelocityModel(n,o,d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
+		//updateVelocityModel(n,o,d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
 
 		tmis=0;
 	
@@ -225,8 +221,10 @@ int main(int argc, char* argv[])
 		if(fabs(tmis) < fabs(tmis0) ){
 			otmis = fabs(tmis);
 			/* optimized parameters */
-			for(im=0;im<nsz*N_STRIPES;im++)
-				ots[im]=cnew[im];
+			for(im=0;im<nsz;im++)
+				otsz[im]=cnewz[im];
+			for(im=0;im<nsv;im++)
+				otsv[im]=cnewv[im];
 			tmis0 = fabs(tmis);
 		}
 
@@ -237,14 +235,18 @@ int main(int argc, char* argv[])
 		PM = expf(-deltaE/temp);
 		
 		if (deltaE<=0){
-			for(im=0;im<nsz*N_STRIPES;im++)
-				sv[im]=cnew[im];
+			for(im=0;im<nsz;im++)
+				sz[im]=cnewz[im];
+			for(im=0;im<nsv;im++)
+				sv[im]=cnewv[im];
 			Em0 = -fabs(tmis);
 		} else {
 			u=getRandomNumberBetween0and1();
 			if (PM > u){
-				for(im=0;im<nsz*N_STRIPES;im++)
-					sv[im]=cnew[im];
+				for(im=0;im<nsz;im++)
+					sz[im]=cnewz[im];
+				for(im=0;im<nsv;im++)
+					sv[im]=cnewv[im];
 				Em0 = -fabs(tmis);
 			}	
 		}	
@@ -254,11 +256,12 @@ int main(int argc, char* argv[])
 	} /* loop over VFSA iterations */
 
 	/* Generate optimal velocity model */
-	interpolateVelModel(n, o, d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
+	//interpolateVelModel(n, o, d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
 
 	/* Write velocity model file */
 	sf_floatwrite(slow,nm,velinv);
 
 	/* Write velocity cubic spline function */
-	sf_floatwrite(ots,nsz*N_STRIPES,vspline);
+	sf_floatwrite(otsv,nsv,vspline);
+	sf_floatwrite(otsz,nsz,zspline);
 }
