@@ -13,17 +13,8 @@ The time misfit is calculated by the difference between the reflection traveltim
 #include <rsf.h>
 #include "tomography.h"
 #include "vfsacrsnh_lib.h"
+#include "velocity_lib.h"
 
-void (*updateVelocityModel)(int*, /* Velocity model dimension n1=n[0] n2=n[1] */
-			   float*, /* Velocity model axis origin o1=o[0] o2=o[1] */
-			   float*, /* Velocity model sampling d1=d[0] d2=d[1] */
-			   float*, /* Velocity model disturbance */
-			   float*, /* Depth coordinates of sv vector */
-			   float*, /* Velocity model */
-			   int, /* sv n1 dimwnsion */
-			   int, /* sv n2 dimension */
-			   float, /* Near surface velocity */
-			   float/* Depth velocity gradient */);
 
 int main(int argc, char* argv[])
 {
@@ -81,7 +72,7 @@ int main(int argc, char* argv[])
 
 	/* Choose update function for velocity model */
 	// TODO: Offer several functions options
-	updateVelocityModel = interpolateSlowModel;
+	//updateVelocityModel = interpolateSlowModel;
 
 	sf_init(argc,argv);
 
@@ -208,9 +199,10 @@ int main(int argc, char* argv[])
 		temp=getVfsaIterationTemperature(q,c0,temp0);
 						
 		/* parameter disturbance */
-		//disturbParameters(temp,cnew,sv,nsz*N_STRIPES,0.001);
+		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001);
 
 		/* Function to update velocity model */
+		interpolateVelModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
 		//updateVelocityModel(n,o,d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
 
 		tmis=0;

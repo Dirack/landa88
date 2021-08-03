@@ -54,7 +54,7 @@ landa88tomo.x:	setup1 $(SRCSTEREO)
 
 GDB1:
 	@echo "Running GDB script for landa88tomo.x"
-	$(call GDB,1,-ex "b 239" -ex "r",landa88tomo.x)
+	$(call GDB,1,-ex "b 193" -ex "r",landa88tomo.x)
 
 clean:
 	rm *.x

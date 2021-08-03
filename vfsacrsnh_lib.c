@@ -15,8 +15,10 @@
 
 */
 
-#define MAX 0.1
-#define MIN -0.1
+#define MAX_VEL 3.0
+#define MIN_VEL 1.4
+#define MAX_Z 3.0
+#define MIN_Z 0.0
 #define APERTURE 0.05
 #define Rnip_MAX 4
 #define Rnip_MIN 0
@@ -52,9 +54,12 @@ float getVfsaIterationTemperature(int iteration,float dampingFactor,float inicia
 }
 
 void disturbParameters( float temperature, /* Temperature of this interation in VFSA */
-			float* disturbedParameter, /* Parameters disturbed vector */
-			float* parameter, /* original parameters vector */
-			int np, /*Number of parameters */
+			float* disturbedVel, /* Parameters disturbed vector */
+			float* originalVel, /* original parameters vector */
+			int nv, /*Number of parameters */
+			float* disturbedZ, /* Parameters disturbed vector */
+			float* originalZ, /* original parameters vector */
+			int nz, /*Number of parameters */
 			float scale /* Scale to multiply by disturbance */)
 /*< Disturb parameters from the previous iteration of VFSA
  Note: It receives a parameter vector and distubs it accordingly to 
@@ -66,23 +71,44 @@ VFSA disturb parameters step.
 	float disturbance;
 	int i;
 
-	for(i=0;i<np;i++){
+	for(i=0;i<nv;i++){
 
 		u=getRandomNumberBetween0and1();
 				
 		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-		disturbedParameter[i] = parameter[i] + (disturbance*scale) * (APERTURE);
+		disturbedVel[i] = originalVel[i] + (disturbance*scale) * (APERTURE);
 
-		if (disturbedParameter[i] >= MAX) {
+		if (disturbedVel[i] >= MAX_VEL) {
 
-			disturbedParameter[i] = MAX - (APERTURE) * getRandomNumberBetween0and1();
+			disturbedVel[i] = MAX_VEL - (APERTURE) * getRandomNumberBetween0and1();
 			
 		}
 
-		if (disturbedParameter[i] <= MIN) {
+		if (disturbedVel[i] <= MIN_VEL) {
 
-			disturbedParameter[i] = (APERTURE) * getRandomNumberBetween0and1() + MIN;
+			disturbedVel[i] = (APERTURE) * getRandomNumberBetween0and1() + MIN_VEL;
+			
+		}
+	}
+
+	for(i=0;i<nz;i++){
+
+		u=getRandomNumberBetween0and1();
+				
+		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
+
+		disturbedZ[i] = originalZ[i] + (disturbance*scale) * (APERTURE);
+
+		if (disturbedZ[i] >= MAX_Z) {
+
+			disturbedZ[i] = MAX_Z - (APERTURE) * getRandomNumberBetween0and1();
+			
+		}
+
+		if (disturbedZ[i] <= MIN_Z) {
+
+			disturbedZ[i] = (APERTURE) * getRandomNumberBetween0and1() + MIN_Z;
 			
 		}
 	}
