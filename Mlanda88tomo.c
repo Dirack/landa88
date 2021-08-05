@@ -15,7 +15,6 @@ The time misfit is calculated by the difference between the reflection traveltim
 #include "vfsacrsnh_lib.h"
 #include "velocity_lib.h"
 
-
 int main(int argc, char* argv[])
 {
 	bool verb; // Verbose parameter
@@ -68,11 +67,6 @@ int main(int argc, char* argv[])
 	sf_file vz_file; // v coordinates of the cubic spline functions
 	sf_file vspline; // Cubic spline velocity model
 	sf_file zspline;
-
-
-	/* Choose update function for velocity model */
-	// TODO: Offer several functions options
-	//updateVelocityModel = interpolateSlowModel;
 
 	sf_init(argc,argv);
 
@@ -203,7 +197,6 @@ int main(int argc, char* argv[])
 
 		/* Function to update velocity model */
 		interpolateSlowModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
-		//updateVelocityModel(n,o,d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
 
 		tmis=0;
 	
@@ -248,7 +241,7 @@ int main(int argc, char* argv[])
 	} /* loop over VFSA iterations */
 
 	/* Generate optimal velocity model */
-	//interpolateVelModel(n, o, d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
+	interpolateVelModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
 
 	/* Write velocity model file */
 	sf_floatwrite(slow,nm,velinv);

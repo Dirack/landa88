@@ -165,6 +165,18 @@ for a set of points (z,vz) given. TODO
 	//#endif
 }
 
+void calcInterfacesZcoord(	float *zi,
+				float *sz,
+				int nsz,
+				int nint){
+	int i;
+	int npi=nsz/nint;
+
+	for(i=0;i<nint;i++){
+		zi[i] = sz[i*npi];
+	}
+}
+
 void interpolateVelModel(  int *n, /* Velocity model dimension n1=n[0] n2=n[1] */
 			   float *o, /* Velocity model axis origin o1=o[0] o2=o[1] */
 			   float *d, /* Velocity model sampling d1=d[0] d2=d[1] */
@@ -172,8 +184,8 @@ void interpolateVelModel(  int *n, /* Velocity model dimension n1=n[0] n2=n[1] *
 			   int nsv, /* sv n2 dimension */
 			   float *sz, /* Depth coordinates of sv vector */
 			   int nsz, /* sv n1 dimwnsion */
-			   float *slow, /* Velocity model */
-			   int nslow)
+			   float *vel, /* Velocity model */
+			   int nvel)
 /*< Velocity model interpolation
 Note: This function uses a sv control points grid to obtain the complete
 velocity model matrix through eno 2D interpolation. The sv vector is the
@@ -183,12 +195,23 @@ velocity increases linearly with depth for gzbg gradient given.
 {
 
 	int i, j;
+	int k;
+	float z;
+	float *zi;
+
+	zi = sf_floatalloc(nsv);
+	zi[nsv-1] = (n[0]-1)*d[0]+o[0];
 
 	/* Calculate velocity function */
         for(j=0;j<n[1];j++){
 
+		// Calculate interfaces z coordinates
+		calcInterfacesZcoord(zi,sz,nsz,nsv-1);
+		k=0;
                 for(i=0;i<n[0];i++){
-			slow[(n[0]*j)+i] = 1.5;
+			z = i*d[0]+o[0];
+			vel[(n[0]*j)+i] = sv[k];
+			if(z>zi[k]) k++;
                 } /* Loop over depth */
 
 	} /* Loop over distance */
