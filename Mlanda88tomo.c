@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
 		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001);
 
 		/* Function to update velocity model */
-		interpolateSlowModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
+		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
 
 		tmis=0;
 	
@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
 	} /* loop over VFSA iterations */
 
 	/* Generate optimal velocity model */
-	interpolateVelModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
+	updateVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
 
 	/* Write velocity model file */
 	sf_floatwrite(slow,nm,velinv);

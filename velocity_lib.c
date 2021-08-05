@@ -3,20 +3,6 @@
 #include <rsf.h>
 #include "velocity_lib.h"
 
-#ifndef GDB_DEBUG
-void (*updateVelocityModel)(int*, /* Velocity model dimension n1=n[0] n2=n[1] */
-			   float*, /* Velocity model axis origin o1=o[0] o2=o[1] */
-			   float*, /* Velocity model sampling d1=d[0] d2=d[1] */
-			   float*, /* Velocity model disturbance */
-			   float*, /* Depth coordinates of sv vector */
-			   float*, /* Velocity model */
-			   int, /* sv n1 dimwnsion */
-			   int, /* sv n2 dimension */
-			   float, /* Near surface velocity */
-			   float/* Depth velocity gradient */);
-#endif
-/*^*/
-
 void calculateSplineCoeficients(int n, /* Vectors (x,y) dimension */
 				float* x, /* x coordinates */
 				float* y, /* y coordinates */
@@ -165,39 +151,45 @@ for a set of points (z,vz) given. TODO
 	//#endif
 }
 
-void calcInterfacesZcoord(	float *zi,
-				float *sz,
-				int nsz,
-				int nint){
-	int i;
-	int npi=nsz/nint;
+void calcInterfacesZcoord(	float *zi, /* Interfaces depth coordinates */
+				float *sz, /* Interfaces depth control points */
+				int nsz, /* Dimension of the sz vector */
+				int nint /* Number of interfaces */)
+/*< Calculate depth coordinates of the interfaces
+ * Note: This function calculates interfaces depth coordinates and stores it
+ * in the zi vector.
+  >*/
+{
+	int i; // Loop counter
+	int npi=nsz/nint; // Number of points for each interface
 
 	for(i=0;i<nint;i++){
 		zi[i] = sz[i*npi];
 	}
 }
 
-void interpolateVelModel(  int *n, /* Velocity model dimension n1=n[0] n2=n[1] */
+void updateVelocityModel(  int *n, /* Velocity model dimension n1=n[0] n2=n[1] */
 			   float *o, /* Velocity model axis origin o1=o[0] o2=o[1] */
 			   float *d, /* Velocity model sampling d1=d[0] d2=d[1] */
 			   float *sv, /* Velocity model disturbance */
-			   int nsv, /* sv n2 dimension */
-			   float *sz, /* Depth coordinates of sv vector */
-			   int nsz, /* sv n1 dimwnsion */
+			   int nsv, /* Dimension of sv the vector */
+			   float *sz, /* Depth coordinates of interfaces */
+			   int nsz, /* Dimension sz the vector */
 			   float *vel, /* Velocity model */
-			   int nvel)
-/*< Velocity model interpolation
-Note: This function uses a sv control points grid to obtain the complete
-velocity model matrix through eno 2D interpolation. The sv vector is the
-velocity disturbance of a constant velocity depth gradient model, that
-velocity increases linearly with depth for gzbg gradient given.
+			   int nvel /* Dimension of the vel vector */)
+/*< Velocity model update
+Note: This function uses a sv (layers velocity) vector and sz (depth interfaces
+coordinates) vector to build the depth velocity model. There is nsv constant
+velocity layers in the model and nsv-1 interfaces separating them.
+These interfaces are described with nsz control points in the sz vector and
+they are interpolated using natural cubic spline interpolation.
  >*/
 {
 
-	int i, j;
-	int k;
-	float z;
-	float *zi;
+	int i, j; // Loop counters
+	int k; // Layers index
+	float z; // Depth coordinate
+	float *zi; // Temporary vector to store depth coordinates
 
 	zi = sf_floatalloc(nsv);
 	zi[nsv-1] = (n[0]-1)*d[0]+o[0];
@@ -205,7 +197,7 @@ velocity increases linearly with depth for gzbg gradient given.
 	/* Calculate velocity function */
         for(j=0;j<n[1];j++){
 
-		// Calculate interfaces z coordinates
+		/* Calculate interfaces z coordinates */
 		calcInterfacesZcoord(zi,sz,nsz,nsv-1);
 		k=0;
                 for(i=0;i<n[0];i++){
@@ -217,65 +209,30 @@ velocity increases linearly with depth for gzbg gradient given.
 	} /* Loop over distance */
 }
 
-void interpolateSlowModel( int *n, /* Velocity model dimension n1=n[0] n2=n[1] */
-			   float *o, /* Velocity model axis origin o1=o[0] o2=o[1] */
-			   float *d, /* Velocity model sampling d1=d[0] d2=d[1] */
-			   float *sv, /* Velociy disturbance */
-			   int nsv,
-			   float *sz, /* Depth coordinate of disturbance */
-			   int nsz,
-			   float *slow, /* Slowness model */
-			   int nslow /* n1 dimension of sv */)
-/*< Slowness model interpolation
-Note: This function uses a sv control points grid to obtain the complete
-slowness model matrix through eno 2D interpolation. The sv vector is the
-velocity disturbance of a constant velocity depth gradient model, that
-velocity increases linearly with depth for gzbg gradient given.
+void buildSlownessModelFromVelocityModel(int *n, /* Velocity model dimension n1=n[0] n2=n[1] */
+			 		 float *o, /* Velocity model axis origin o1=o[0] o2=o[1] */
+					 float *d, /* Velocity model sampling d1=d[0] d2=d[1] */
+					 float *sv, /* Velociy disturbance */
+					 int nsv, /* Dimension of sv vector */
+					 float *sz, /* Depth coordinates of interfaces */
+					 int nsz, /* Dimension of sz vector */
+					 float *vel, /* Velocity model */
+					 int nslow /* Dimension of vel vector */)
+/*< Slowness model build from velocity model
+Note: This function is a function wrapper to updateVelocityModel function.
+It calls that function to update the velocity model and build the slowness
+model matrix using the slowness definition slow=(1.0/(v*v)). 
  >*/
 {
 
 	int i, nm; // Loop counters and indexes
 
 	nm =n[0]*n[1];
-	interpolateVelModel(n,o,d,sv,nsv,sz,nsz,slow,nm);
+	updateVelocityModel(n,o,d,sv,nsv,sz,nsz,vel,nm);
 
 	/* transform velocity to slowness */
 	for(i=0;i<nm;i++){
-			slow[i] = 1.0/(slow[i]*slow[i]);
+			vel[i] = 1.0/(vel[i]*vel[i]);
 	}
 }
 
-void enoInterpolation2d(int *n, /* Interpolated vector dimension n1=n[0] n2=n[1] */
-			float *o, /* Interpolated vector  axis origin o1=o[0] o2=o[1] */
-			float *d, /* Interpolated vector sampling d1=d[0] d2=d[1] */
-			float *ov, /* Original vector to interpolate */
-			float *iv, /* Interpolated vector */
-			int nov1, /* Original vector n1 dimension */
-			int nov2 /* Orignanl vector n2 dimension */)
-/*< Eno interpolation 2D function
-Note: This function interpolates a vector increasing the number of
-samples in the interpolated vector using eno interpolation. This vector
-is a 2D matrix stored in a vector ov by columns (ov[j*n1+i]) and the new
-vector iv will be the interpolated vector.
- >*/
-{
-
-	sf_eno2 map;
-	float f2[2];
-	int i, j, i1, i2;
-	float x, y;
-
-	map = sf_eno2_init(3,nov1,nov2);
-
-	sf_eno2_set1(map,ov);
-
-        for(i2=0;i2<n[1];i2++){
-
-                for(i1=0;i1<n[0];i1++){
-                        x = i1*d[0]+o[0]; i=x; x -= i;
-                        y = i2*d[1]+o[1]; j=y; y -= j;
-                        sf_eno2_apply(map,i,j,x,y,&iv[i2*n[0]+i1],f2,FUNC);
-                }
-        }
-        sf_eno2_close(map);
-}
