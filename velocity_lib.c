@@ -185,15 +185,15 @@ velocity increases linearly with depth for gzbg gradient given.
 	int i, j;
 
 	/* Calculate velocity function */
-        for(j=0;j<nslow;j++){
+        for(j=0;j<n[1];j++){
 
-                /*for(i=0;i<nsz;i++){
+                for(i=0;i<n[0];i++){
+			slow[(n[0]*j)+i] = 1/(1.5*1.5);
+                } /* Loop over depth */
 
-			sv[(j*nsz)+i] = v0+gzbg*sz[i]+sv[(j*nsz)+i];
-                }*/
-		slow[j]=1/(1.5*1.5);
-	}
+	} /* Loop over distance */
 
+	/* TODO: Delete this calling to eno */
 	/* Interpolate velocity matrix */
 	//enoInterpolation2d(n,o,d,sv,slow,nsz,nsx);
 }

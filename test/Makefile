@@ -13,7 +13,7 @@
 # License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
 DEP= ../raytrace.c ../grid2.c ../atela.c
-SRCLANDA = ../Mlanda88tomo.c ../tomography.c $(DEP) ../vfsacrsnh_lib.c
+SRCLANDA = ../Mlanda88tomo.c ../tomography.c ../velocity_lib.c $(DEP) ../vfsacrsnh_lib.c
 
 # model files: Stacked section and parameters cube from CRE stack
 PARCUBE=model/parametersCube.rsf
