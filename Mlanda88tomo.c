@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
 		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001);
 
 		/* Function to update velocity model */
-		interpolateVelModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
+		interpolateSlowModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
 		//updateVelocityModel(n,o,d,sv,sz,slow,nsz,N_STRIPES,v0,gz[0]);
 
 		tmis=0;

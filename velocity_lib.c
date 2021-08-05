@@ -188,26 +188,21 @@ velocity increases linearly with depth for gzbg gradient given.
         for(j=0;j<n[1];j++){
 
                 for(i=0;i<n[0];i++){
-			slow[(n[0]*j)+i] = 1/(1.5*1.5);
+			slow[(n[0]*j)+i] = 1.5;
                 } /* Loop over depth */
 
 	} /* Loop over distance */
-
-	/* TODO: Delete this calling to eno */
-	/* Interpolate velocity matrix */
-	//enoInterpolation2d(n,o,d,sv,slow,nsz,nsx);
 }
 
 void interpolateSlowModel( int *n, /* Velocity model dimension n1=n[0] n2=n[1] */
 			   float *o, /* Velocity model axis origin o1=o[0] o2=o[1] */
 			   float *d, /* Velocity model sampling d1=d[0] d2=d[1] */
 			   float *sv, /* Velociy disturbance */
+			   int nsv,
 			   float *sz, /* Depth coordinate of disturbance */
+			   int nsz,
 			   float *slow, /* Slowness model */
-			   int nsz, /* n1 dimension of sv */
-			   int nsx, /* n2 dimension of sv */
-			   float v0, /* Near surface velocity */
-			   float gzbg /* Background gradient in depth */)
+			   int nslow /* n1 dimension of sv */)
 /*< Slowness model interpolation
 Note: This function uses a sv control points grid to obtain the complete
 slowness model matrix through eno 2D interpolation. The sv vector is the
@@ -218,10 +213,10 @@ velocity increases linearly with depth for gzbg gradient given.
 
 	int i, nm; // Loop counters and indexes
 
-	//interpolateVelModel(n, o, d,sv,sz,slow,nsz,nsx,v0,gzbg);
+	nm =n[0]*n[1];
+	interpolateVelModel(n,o,d,sv,nsv,sz,nsz,slow,nm);
 
 	/* transform velocity to slowness */
-	nm =n[0]*n[1];
 	for(i=0;i<nm;i++){
 			slow[i] = 1.0/(slow[i]*slow[i]);
 	}
