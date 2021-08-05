@@ -80,91 +80,23 @@ and x vector must be in crescent order.
 	}
 }
 
-void updateCubicSplineVelModel( float* slow, /* Slowness vector */
-		    		int* n, /* n[0]=n1 n2=n[1] */
-		    		float* o, /* o[0]=o1 o[1]=o2 */
-		    		float* d, /* d[0]=d1 d[1]=d2 */
-			    	int dim, /* Dimension of (z,vz) vectors */
-				float* sz, /* Spline not Depth coordinates */
-				float* sv, /* Spline not Velocity coordinates */
-				float gzbg, /* Background velocity gradient in z */
-				float v0, /* Near surface velocity */
-				int n_stripes)
-/*< Funcion to update spline cubic velocity model:
-Note:
-Make a velocity varying with depth model using the spline cubic interpolation
-for a set of points (z,vz) given. TODO
-
- >*/
-{
-	int i, j=0, k;
-	//int ic;
-	float z=0.0;
-	//float** coef;
-	float v[n_stripes][n[0]];
-	int app, app_len=n[1]/n_stripes;
-
-	//coef = sf_floatalloc2(4*(dim-1),n_stripes);
-
-	/* Calculate spline coeficients */
-	//calculateSplineCoeficients(dim,sz,sv,coef,n_stripes);
-
-	/* Calculate vel(city function */
-	for(k=0;k<n_stripes;k++){
-
-		z = o[0];
-		j = 0;
-
-		for(i=1;i<dim;i++){
-			
-			//ic = (i-1)*4;
-
-			while(z<=sz[i]){
-				z = (j*d[0]+o[0])-sz[i-1];
-				if(j>=n[0]) break;
-				//v[k][j] = coef[k][0+ic]*z*z*z+coef[k][1+ic]*z*z+coef[k][2+ic]*z+coef[k][3+ic];
-				v[k][j] = v0+gzbg*z+sv[(k*dim)+i-1];
-				//v[k][j] = sv[(k*dim)+i-1];
-				j++;
-			}
-		}
-	}
-
-	/* Update slowness model */
-	for(k=0;k<n_stripes;k++){
-
-		app = (k*app_len);
-
-		for(i=0;i<n[0];i++){
-
-			for(j=app;j<((k+1)*app_len);j++){
-				/* TODO Use 2D eno interpolation to obtain velocity model*/
-				slow[j*n[0]+i]=1./(v[k][i]*v[k][i]);
-				//#ifdef GDB_DEBUG
-				//sf_warning("[%d][%d][%d] %f %f ",i,j,k,v[k][i],slow[j*n[0]+i]);
-				//#endif
-			} /* Loop over distance */
-		} /* Loop over depth */
-	} /* Loop over cubic spline functions */
-	//#ifdef GDB_DEBUG
-	//sf_error("fim");
-	//#endif
-}
-
 void calcInterfacesZcoord(	float *zi, /* Interfaces depth coordinates */
-				float *sz, /* Interfaces depth control points */
-				int nsz, /* Dimension of the sz vector */
-				int nint /* Number of interfaces */)
+				int nint, /* Number of interfaces */
+				float xs,
+				int si,
+				float **coef)
 /*< Calculate depth coordinates of the interfaces
  * Note: This function calculates interfaces depth coordinates and stores it
  * in the zi vector.
   >*/
 {
 	int i; // Loop counter
-	int npi=nsz/nint; // Number of points for each interface
 
 	for(i=0;i<nint;i++){
-		zi[i] = sz[i*npi];
+		zi[i] = coef[i][si*4+0]*xs*xs*xs+
+			coef[i][si*4+1]*xs*xs+
+			coef[i][si*4+2]*xs+
+			coef[i][si*4+3];
 	}
 }
 
@@ -188,8 +120,24 @@ they are interpolated using natural cubic spline interpolation.
 
 	int i, j; // Loop counters
 	int k; // Layers index
+	int l=0; // Splines index
 	float z; // Depth coordinate
 	float *zi; // Temporary vector to store depth coordinates
+	//TODO x should be passed to the function
+	int nx=4;
+	float dx=3.33;
+	float ox=-2.0;
+	float *x;
+	float** coef;
+	float xx;
+
+	x = sf_floatalloc(nx);
+	for(i=0;i<nx;i++)
+		x[i] = i*dx+ox;
+
+	/* Calculate coeficients matrix (interfaces interpolation) */
+	coef = sf_floatalloc2(4*(nx-1),nsv-1);
+	calculateSplineCoeficients(nx,x,sz,coef,nsv-1);
 
 	zi = sf_floatalloc(nsv);
 	zi[nsv-1] = (n[0]-1)*d[0]+o[0];
@@ -197,13 +145,15 @@ they are interpolated using natural cubic spline interpolation.
 	/* Calculate velocity function */
         for(j=0;j<n[1];j++){
 
+		xx = d[1]*j+o[1];
+		if(xx>x[l+1]) l++;
 		/* Calculate interfaces z coordinates */
-		calcInterfacesZcoord(zi,sz,nsz,nsv-1);
+		calcInterfacesZcoord(zi,nsv-1,xx-x[l],l,coef);
 		k=0;
                 for(i=0;i<n[0];i++){
 			z = i*d[0]+o[0];
-			vel[(n[0]*j)+i] = sv[k];
 			if(z>zi[k]) k++;
+			vel[(n[0]*j)+i] = sv[k];
                 } /* Loop over depth */
 
 	} /* Loop over distance */
