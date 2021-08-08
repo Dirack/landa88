@@ -53,6 +53,8 @@ int main(int argc, char* argv[])
 	float *BETA; // Beta parameters vector
 	float* sz; // Depth coordinates of the spline velocity function
 	int nsz; // Dimension of sz vector
+	float dsz;
+	float osz;
 	int nsv;
 	float* sv; // Velocity coordinates of the spline velocity function
 	sf_file shots; // NIP sources (z,x)
@@ -116,6 +118,8 @@ int main(int argc, char* argv[])
 
 	/* Cubic spline vector */
 	if(!sf_histint(sz_file,"n1",&nsz)) sf_error("No n1= in sz file");
+	if(!sf_histfloat(sz_file,"d1",&dsz)) sf_error("No d1= in sz file");
+	if(!sf_histfloat(sz_file,"o1",&osz)) sf_error("No o1= in sz file");
 	if(!sf_histint(vz_file,"n1",&nsv)) sf_error("No n1= in sv file");
 
 	/* Build cubic spline velocity matrix */
@@ -196,7 +200,7 @@ int main(int argc, char* argv[])
 		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001);
 
 		/* Function to update velocity model */
-		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
+		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
 
 		tmis=0;
 	
@@ -241,7 +245,7 @@ int main(int argc, char* argv[])
 	} /* loop over VFSA iterations */
 
 	/* Generate optimal velocity model */
-	updateVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,slow,nm);
+	updateVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
 
 	/* Write velocity model file */
 	sf_floatwrite(slow,nm,velinv);

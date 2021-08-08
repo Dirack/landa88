@@ -107,6 +107,8 @@ void updateVelocityModel(  int *n, /* Velocity model dimension n1=n[0] n2=n[1] *
 			   int nsv, /* Dimension of sv the vector */
 			   float *sz, /* Depth coordinates of interfaces */
 			   int nsz, /* Dimension sz the vector */
+			   float osz,
+			   float dsz,
 			   float *vel, /* Velocity model */
 			   int nvel /* Dimension of the vel vector */)
 /*< Velocity model update
@@ -123,17 +125,14 @@ they are interpolated using natural cubic spline interpolation.
 	int l=0; // Splines index
 	float z; // Depth coordinate
 	float *zi; // Temporary vector to store depth coordinates
-	//TODO x should be passed to the function
-	int nx=4;
-	float dx=3.33;
-	float ox=-2.0;
+	int nx=nsz/(nsv-1);
 	float *x;
 	float** coef;
 	float xx;
 
 	x = sf_floatalloc(nx);
 	for(i=0;i<nx;i++)
-		x[i] = i*dx+ox;
+		x[i] = i*dsz+osz;
 
 	/* Calculate coeficients matrix (interfaces interpolation) */
 	coef = sf_floatalloc2(4*(nx-1),nsv-1);
@@ -166,6 +165,8 @@ void buildSlownessModelFromVelocityModel(int *n, /* Velocity model dimension n1=
 					 int nsv, /* Dimension of sv vector */
 					 float *sz, /* Depth coordinates of interfaces */
 					 int nsz, /* Dimension of sz vector */
+					 float osz,
+					 float dsz,
 					 float *vel, /* Velocity model */
 					 int nslow /* Dimension of vel vector */)
 /*< Slowness model build from velocity model
@@ -178,7 +179,7 @@ model matrix using the slowness definition slow=(1.0/(v*v)).
 	int i, nm; // Loop counters and indexes
 
 	nm =n[0]*n[1];
-	updateVelocityModel(n,o,d,sv,nsv,sz,nsz,vel,nm);
+	updateVelocityModel(n,o,d,sv,nsv,sz,nsz,osz,dsz,vel,nm);
 
 	/* transform velocity to slowness */
 	for(i=0;i<nm;i++){
