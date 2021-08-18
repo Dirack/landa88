@@ -188,7 +188,11 @@ int main(int argc, char* argv[])
 
 	/* cubic spline velocity matrix */
 	sf_putint(vspline,"n1",nsv);
+	sf_putint(vspline,"n2",1);
 	sf_putint(zspline,"n1",nsz);
+	sf_putint(zspline,"o1",osz);
+	sf_putint(zspline,"d1",dsz);
+	sf_putint(zspline,"n2",1);
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
 	for (q=0; q<nit; q++){

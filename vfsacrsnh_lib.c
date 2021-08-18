@@ -72,12 +72,13 @@ VFSA disturb parameters step.
 	int i;
 
 	for(i=0;i<nv;i++){
+		disturbedVel[i]=originalVel[i];
 
-		u=getRandomNumberBetween0and1();
+		/*u=getRandomNumberBetween0and1();
 				
 		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-		disturbedVel[i] = originalVel[i] + (disturbance*scale) * (APERTURE);
+		disturbedVel[i] = originalVel[i] + (disturbance*scale*10) * (APERTURE);
 
 		if (disturbedVel[i] >= MAX_VEL) {
 
@@ -89,7 +90,7 @@ VFSA disturb parameters step.
 
 			disturbedVel[i] = (APERTURE) * getRandomNumberBetween0and1() + MIN_VEL;
 			
-		}
+		}*/
 	}
 
 	for(i=0;i<nz;i++){
@@ -98,7 +99,7 @@ VFSA disturb parameters step.
 				
 		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-		disturbedZ[i] = originalZ[i] + (disturbance*scale) * (APERTURE);
+		disturbedZ[i] = originalZ[i] + (disturbance*scale*10) * (APERTURE);
 
 		if (disturbedZ[i] >= MAX_Z) {
 
