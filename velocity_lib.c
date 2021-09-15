@@ -100,6 +100,55 @@ void calcInterfacesZcoord(	float *zi, /* Interfaces depth coordinates */
 	}
 }
 
+float calculateLocationMissfit(  float **s,
+			   float *sz, /* Depth coordinates of interfaces */
+			   int nsz, /* Dimension sz the vector */
+			   float osz,
+			   float dsz,
+				int nshot)
+/*< Velocity model update
+Note: This function uses a sv (layers velocity) vector and sz (depth interfaces
+coordinates) vector to build the depth velocity model. There is nsv constant
+velocity layers in the model and nsv-1 interfaces separating them.
+These interfaces are described with nsz control points in the sz vector and
+they are interpolated using natural cubic spline interpolation.
+ >*/
+{
+
+	int i, j; // Loop counters
+	int k; // Layers index
+	int l=0; // Splines index
+	float z; // Depth coordinate
+	float *zi; // Temporary vector to store depth coordinates
+	int nx=nsz;//(nsv-1);
+	float *x;
+	float** coef;
+	float xx;
+	float misfit = 0.;
+
+	x = sf_floatalloc(nx);
+	for(i=0;i<nx;i++)
+		x[i] = i*dsz+osz;
+
+	/* Calculate coeficients matrix (interfaces interpolation) */
+	coef = sf_floatalloc2(4*(nx-1),1);
+	calculateSplineCoeficients(nx,x,sz,coef,1);
+
+	zi = sf_floatalloc(1);
+
+	/* Calculate interfaces z coordinates */
+	for(i=0;i<nshot;i++){
+
+		l = (int) (s[i][1]-osz)/dsz;
+
+		calcInterfacesZcoord(zi,1,s[i][1]-x[l],l,coef);
+
+		misfit += fabs(zi[0]-s[i][0]);
+	}
+
+	return sqrt(misfit*misfit);
+}
+
 void updateVelocityModel(  int *n, /* Velocity model dimension n1=n[0] n2=n[1] */
 			   float *o, /* Velocity model axis origin o1=o[0] o2=o[1] */
 			   float *d, /* Velocity model sampling d1=d[0] d2=d[1] */

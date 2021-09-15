@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 	float* cnewz; // Temporary parameters vector used in VFSA
 	float* otsv; // Optimized parameters vector
 	float* otsz; // Optimized parameters vector
-	float tmis0=100; // Best time misfit
+	float tmis0; // Best time misfit
 	float otmis=0; // Best time misfit
 	float deltaE; // Delta (Metrópolis criteria in VFSA)
 	float Em0=0; // Energy (VFSA algorithm)
@@ -57,6 +57,7 @@ int main(int argc, char* argv[])
 	float osz;
 	int nsv;
 	float* sv; // Velocity coordinates of the spline velocity function
+	float* mis;
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -69,6 +70,8 @@ int main(int argc, char* argv[])
 	sf_file vz_file; // v coordinates of the cubic spline functions
 	sf_file vspline; // Cubic spline velocity model
 	sf_file zspline;
+	sf_file misfit;
+	sf_file misinv;
 
 	sf_init(argc,argv);
 
@@ -84,6 +87,8 @@ int main(int argc, char* argv[])
 	betas = sf_input("betas");
 	sz_file = sf_input("sz");
 	vz_file = sf_input("vz");
+	misfit = sf_input("misfit");
+	misinv = sf_output("misinv");
 
 	/* Velocity model: get 2D grid parameters */
 	if(!sf_histint(vel,"n1",n)) sf_error("No n1= in input");
@@ -175,6 +180,14 @@ int main(int argc, char* argv[])
 		sf_warning("nz=%d",nsz);
 	}
 
+	/* Use previous misfit as the initial misfit value */
+	mis=sf_floatalloc(1);
+	sf_floatread(mis,1,misfit);
+	//tmis0=mis[0];
+	tmis0=100;
+	otmis=tmis0;
+	free(mis);
+
 	/* Velocity model from inversion */
 	sf_putint(velinv,"n1",n[0]);
 	sf_putint(velinv,"n2",n[1]);
@@ -194,6 +207,15 @@ int main(int argc, char* argv[])
 	sf_putint(zspline,"d1",dsz);
 	sf_putint(zspline,"n2",1);
 
+	sf_putint(misinv,"n1",1);
+	sf_putint(misinv,"n2",1);
+	sf_putint(misinv,"n2",1);
+	
+	for(im=0;im<nsz;im++)
+		otsz[im]=sz[im];
+	for(im=0;im<nsv;im++)
+		otsv[im]=sv[im];
+
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
 	for (q=0; q<nit; q++){
 	
@@ -210,6 +232,7 @@ int main(int argc, char* argv[])
 	
 		/* Calculate time missfit through forward modeling */		
 		tmis=calculateTimeMissfit(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,nshot);
+		tmis+=calculateLocationMissfit(s,cnewz,nsz,osz,dsz,nshot);
 
 		if(fabs(tmis) < fabs(tmis0) ){
 			otmis = fabs(tmis);
@@ -249,7 +272,7 @@ int main(int argc, char* argv[])
 	} /* loop over VFSA iterations */
 
 	/* Generate optimal velocity model */
-	updateVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
+	updateVelocityModel(n,o,d,otsv,nsv,otsz,nsz,osz,dsz,slow,nm);
 
 	/* Write velocity model file */
 	sf_floatwrite(slow,nm,velinv);
@@ -257,4 +280,5 @@ int main(int argc, char* argv[])
 	/* Write velocity cubic spline function */
 	sf_floatwrite(otsv,nsv,vspline);
 	sf_floatwrite(otsz,nsz,zspline);
+	sf_floatwrite(&otmis,1,misinv);
 }

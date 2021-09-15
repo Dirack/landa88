@@ -15,11 +15,15 @@
 
 */
 
-#define MAX_VEL 3.0
-#define MIN_VEL 1.4
-#define MAX_Z 3.0
-#define MIN_Z 0.0
-#define APERTURE 0.05
+/*
+TODO: Modify macro definition in search window for each interface.
+Large windows can make the result oscilate a lot and do not converge
+*/
+#define MAX_VEL 1.6
+#define MIN_VEL 1.45
+#define MAX_Z 1.2
+#define MIN_Z 0.9
+#define APERTURE 0.05 // TODO: Some macro definitions bellow should be deleted
 #define Rnip_MAX 4
 #define Rnip_MIN 0
 #define RNIP_APERTURE Rnip_MAX-Rnip_MIN
@@ -53,6 +57,7 @@ float getVfsaIterationTemperature(int iteration,float dampingFactor,float inicia
 
 }
 
+/* TODO: Modify this function for multiple interfaces */
 void disturbParameters( float temperature, /* Temperature of this interation in VFSA */
 			float* disturbedVel, /* Parameters disturbed vector */
 			float* originalVel, /* original parameters vector */
@@ -71,10 +76,10 @@ VFSA disturb parameters step.
 	float disturbance;
 	int i;
 
-	for(i=0;i<nv;i++){
-		disturbedVel[i]=originalVel[i];
+	for(i=0;i<nv-1;i++){
+		//disturbedVel[i]=originalVel[i];
 
-		/*u=getRandomNumberBetween0and1();
+		u=getRandomNumberBetween0and1();
 				
 		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
@@ -90,8 +95,10 @@ VFSA disturb parameters step.
 
 			disturbedVel[i] = (APERTURE) * getRandomNumberBetween0and1() + MIN_VEL;
 			
-		}*/
+		}
 	}
+
+		disturbedVel[nv-1]=originalVel[nv-1];
 
 	for(i=0;i<nz;i++){
 

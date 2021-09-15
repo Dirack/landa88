@@ -48,7 +48,7 @@ setup1:	landa88tomo/pick.txt landa88tomo/parametersCube.asc
 # Version of the landa88tomo program for GDB (GNU debugger)
 landa88tomo:	landa88tomo.x GDB1
 
-landa88tomo.x:	setup1 $(SRCSTEREO)
+landa88tomo.x:	$(SRCSTEREO)
 	@echo "Program landa88tomo.x for GDB built"
 	gcc -DGDB_DEBUG -g $(SRCLANDA) -I$$RSFSRC/include -I.. -L$$RSFSRC/lib -o $@ -lrsf -lm
 
