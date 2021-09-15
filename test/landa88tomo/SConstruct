@@ -171,11 +171,14 @@ Flow(mis,None,'spike nsp=1 mag=100 k1=1 n1=1')
 
 models = []
 model = velinv
+misfit = []
+misfit.append(mis)
 for i in range(2,ni+2,1):
 
 	velinv = 'model_%d' % i
 	misinv = 'misfit_%d' % i
 	models.append(velinv)
+	misfit.append(misinv)
 	vspline = 'vspline_%d' % i
 	zspline = 'zspline_%d' % i
 	nipangles = 'nipangles_%d' % i
@@ -246,4 +249,15 @@ Plot('models',
 	put label3=Model unit3=index |
 	grey color=j scalebar=y barreverse=y bias=1.508 title="Velocity models" barlabel="Velocity" barunit="Km/s" min1=0 max1=3 min2=1 max2=5
 	''')
+
+# Plot misfit values for each iteration
+Flow('misfitvar',misfit,'rcat axis=1 ${SOURCES[1:%d]}'%(ni))
+
+Plot('misfitvar',
+	'''
+	put label1=Iteration unit1=index label2=Misfit n2=1 d1=1 |
+	window f1=2 |
+	graph title="Misfit variation"
+	''')
+
 End()
