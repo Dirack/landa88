@@ -68,7 +68,8 @@ float calculateTimeMissfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   float *d, /* Velocity model sampling d1=d[0] d2=d[1] */
 			   float *slow, /* Slowness velociy model */
 			   float *a, /* Normal ray angle for each NIP source (degrees) */
-			   int ns /* Number of NIP sources */)
+			   int ns, /* Number of NIP sources */
+				int itf)
 /*< Return time missfit sum of source-NIP-receiver rays 
 
 Note: This function traces nr reflection rays pairs from each NIP source
@@ -99,7 +100,7 @@ traveltime approximation to calculate the time misfit returned by the function.
 
 	x = sf_floatalloc(2);
 
-	for(is=0;is<ns;is++){
+	for(is=(itf*ns);is<(itf*ns+ns);is++){
 
 		x[0]=s[is][0];
 		x[1]=s[is][1];

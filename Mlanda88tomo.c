@@ -51,13 +51,14 @@ int main(int argc, char* argv[])
 	float *t0; // t0's for normal rays
 	float *RNIP; // Rnip parameters vector
 	float *BETA; // Beta parameters vector
-	float* sz; // Depth coordinates of the spline velocity function
+	float* sz; // Interfaces depth coordinates (cubic spline function)
 	int nsz; // Dimension of sz vector
-	float dsz;
-	float osz;
-	int nsv;
-	float* sv; // Velocity coordinates of the spline velocity function
-	float* mis;
+	float dsz; // sz vector sampling
+	float osz; // sz vector origin's
+	int nsv; // Dimension of sv vector
+	float* sv; // Layer's Velocity
+	float* mis; // Missfit of the current iteration
+	int itf; // Interface to invert
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -66,12 +67,12 @@ int main(int argc, char* argv[])
 	sf_file t0s; // Normal ray traveltimes
 	sf_file rnips; // RNIP parameter for each m0
 	sf_file betas; // BETA parameter for each m0
-	sf_file sz_file; // z coordinates of the cubic spline functions
-	sf_file vz_file; // v coordinates of the cubic spline functions
-	sf_file vspline; // Cubic spline velocity model
-	sf_file zspline;
-	sf_file misfit;
-	sf_file misinv;
+	sf_file sz_file; // interfaces z coordinates (cubic spline function)
+	sf_file vz_file; // Layer's velocity
+	sf_file vspline; // Layers velocity
+	sf_file zspline; // Interfaces spline nodes 
+	sf_file misfit; // Misfit of the previous iteration
+	sf_file misinv; // Misfit result of this VFSA iteration
 
 	sf_init(argc,argv);
 
@@ -112,6 +113,9 @@ int main(int argc, char* argv[])
 
 	if(!sf_getfloat("c0",&c0)) c0=0.1;
 	/* Damping factor for VFSA algorithm */
+
+	if(!sf_getint("itf",&itf)) itf=0;
+	/* Interface to invert, others will be ignored */
 
 	/* Shotsfile: get shot points */
 	if(!sf_histint(shots,"n1",&ndim) || 2 != ndim)
@@ -183,6 +187,7 @@ int main(int argc, char* argv[])
 	/* Use previous misfit as the initial misfit value */
 	mis=sf_floatalloc(1);
 	sf_floatread(mis,1,misfit);
+	// TODO choose the tmis0 first value
 	//tmis0=mis[0];
 	tmis0=100;
 	otmis=tmis0;
@@ -207,9 +212,10 @@ int main(int argc, char* argv[])
 	sf_putint(zspline,"d1",dsz);
 	sf_putint(zspline,"n2",1);
 
+	/* Misfit value */
 	sf_putint(misinv,"n1",1);
 	sf_putint(misinv,"n2",1);
-	sf_putint(misinv,"n2",1);
+	sf_putint(misinv,"n3",1);
 	
 	for(im=0;im<nsz;im++)
 		otsz[im]=sz[im];
@@ -223,16 +229,16 @@ int main(int argc, char* argv[])
 		temp=getVfsaIterationTemperature(q,c0,temp0);
 						
 		/* parameter disturbance */
-		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001);
+		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001,itf);
 
 		/* Function to update velocity model */
 		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
 
 		tmis=0;
 	
-		/* Calculate time missfit through forward modeling */		
-		tmis=calculateTimeMissfit(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,nshot);
-		tmis+=calculateLocationMissfit(s,cnewz,nsz,osz,dsz,nshot);
+		/* Calculate time misfit through forward modeling */		
+		tmis=calculateTimeMissfit(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf);
+		tmis+=calculateLocationMissfit(s,cnewz,nsz/(nsv-1),osz,dsz,nshot,itf);
 
 		if(fabs(tmis) < fabs(tmis0) ){
 			otmis = fabs(tmis);

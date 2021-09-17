@@ -105,7 +105,8 @@ float calculateLocationMissfit(  float **s,
 			   int nsz, /* Dimension sz the vector */
 			   float osz,
 			   float dsz,
-				int nshot)
+				int nshot,
+				int itf)
 /*< Velocity model update
 Note: This function uses a sv (layers velocity) vector and sz (depth interfaces
 coordinates) vector to build the depth velocity model. There is nsv constant
@@ -125,14 +126,19 @@ they are interpolated using natural cubic spline interpolation.
 	float** coef;
 	float xx;
 	float misfit = 0.;
+	float* szz;
 
 	x = sf_floatalloc(nx);
-	for(i=0;i<nx;i++)
+	szz = sf_floatalloc(nx);
+
+	for(i=0;i<nx;i++){
 		x[i] = i*dsz+osz;
+		szz[i]=sz[i+(itf*nx)];
+	}
 
 	/* Calculate coeficients matrix (interfaces interpolation) */
 	coef = sf_floatalloc2(4*(nx-1),1);
-	calculateSplineCoeficients(nx,x,sz,coef,1);
+	calculateSplineCoeficients(nx,x,szz,coef,1);
 
 	zi = sf_floatalloc(1);
 

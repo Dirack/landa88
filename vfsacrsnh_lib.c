@@ -19,11 +19,11 @@
 TODO: Modify macro definition in search window for each interface.
 Large windows can make the result oscilate a lot and do not converge
 */
-#define MAX_VEL 1.6
+#define MAX_VEL 1.9
 #define MIN_VEL 1.45
-#define MAX_Z 1.2
+#define MAX_Z 1.3
 #define MIN_Z 0.9
-#define APERTURE 0.05 // TODO: Some macro definitions bellow should be deleted
+#define APERTURE MAX_VEL-MIN_VEL // TODO: Some macro definitions bellow should be deleted
 #define Rnip_MAX 4
 #define Rnip_MIN 0
 #define RNIP_APERTURE Rnip_MAX-Rnip_MIN
@@ -65,7 +65,8 @@ void disturbParameters( float temperature, /* Temperature of this interation in 
 			float* disturbedZ, /* Parameters disturbed vector */
 			float* originalZ, /* original parameters vector */
 			int nz, /*Number of parameters */
-			float scale /* Scale to multiply by disturbance */)
+			float scale /* Scale to multiply by disturbance */,
+			int itf)
 /*< Disturb parameters from the previous iteration of VFSA
  Note: It receives a parameter vector and distubs it accordingly to 
 VFSA disturb parameters step.
@@ -75,48 +76,53 @@ VFSA disturb parameters step.
 	float u;
 	float disturbance;
 	int i;
+	int nx=nz/(nv-1);
+	float maxvel=originalVel[itf]+0.5;
+	float minvel=originalVel[itf]-0.5;
+	float minz[2]={0.9,1.75};
+	float maxz[2]={1.45,1.9};
 
-	for(i=0;i<nv-1;i++){
-		//disturbedVel[i]=originalVel[i];
+	for(i=0;i<nv;i++)		
+		disturbedVel[i]=originalVel[i];
 
-		u=getRandomNumberBetween0and1();
+	u=getRandomNumberBetween0and1();
 				
-		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
+	disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-		disturbedVel[i] = originalVel[i] + (disturbance*scale*10) * (APERTURE);
+	disturbedVel[itf] = originalVel[itf] + (disturbance*scale*10) * (0.05);
 
-		if (disturbedVel[i] >= MAX_VEL) {
+	if (disturbedVel[itf] >= MAX_VEL) {
 
-			disturbedVel[i] = MAX_VEL - (APERTURE) * getRandomNumberBetween0and1();
+		disturbedVel[itf] = MAX_VEL - (APERTURE) * getRandomNumberBetween0and1();
 			
-		}
-
-		if (disturbedVel[i] <= MIN_VEL) {
-
-			disturbedVel[i] = (APERTURE) * getRandomNumberBetween0and1() + MIN_VEL;
-			
-		}
 	}
 
-		disturbedVel[nv-1]=originalVel[nv-1];
+	if (disturbedVel[itf] <= MIN_VEL) {
 
-	for(i=0;i<nz;i++){
+		disturbedVel[itf] = (APERTURE) * getRandomNumberBetween0and1() + MIN_VEL;
+			
+	}
+
+	for(i=0;i<nz;i++)
+		disturbedZ[i]=originalZ[i];
+	
+	for(i=(itf*nx);i<(itf*nx+nx);i++){
 
 		u=getRandomNumberBetween0and1();
 				
 		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-		disturbedZ[i] = originalZ[i] + (disturbance*scale*10) * (APERTURE);
+		disturbedZ[i] = originalZ[i] + (disturbance*scale*10) * (0.05);
 
-		if (disturbedZ[i] >= MAX_Z) {
+		if (disturbedZ[i] >= maxz[itf]) {
 
-			disturbedZ[i] = MAX_Z - (APERTURE) * getRandomNumberBetween0and1();
+			disturbedZ[i] = maxz[itf] - (maxz[i]-minz[i]) * getRandomNumberBetween0and1();
 			
 		}
 
-		if (disturbedZ[i] <= MIN_Z) {
+		if (disturbedZ[i] <= minz[itf]) {
 
-			disturbedZ[i] = (APERTURE) * getRandomNumberBetween0and1() + MIN_Z;
+			disturbedZ[i] = (maxz[i]-minz[i]) * getRandomNumberBetween0and1() + minz[itf];
 			
 		}
 	}
