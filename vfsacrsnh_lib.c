@@ -5,9 +5,9 @@
 	 	 
 	 Version 1.0
 	 
-	 Site: http://www.dirackslounge.online
+	 Site: https://dirack.github.io
 	 
-	 Programer: Rodolfo A. C. Neves (Dirack) 19/09/2019
+	 Programmer: Rodolfo A. C. Neves (Dirack) 19/09/2019
 
 	 Email:  rodolfo_profissional@hotmail.com
 
@@ -23,13 +23,7 @@ Large windows can make the result oscilate a lot and do not converge
 #define MIN_VEL 1.45
 #define MAX_Z 1.3
 #define MIN_Z 0.9
-#define APERTURE MAX_VEL-MIN_VEL // TODO: Some macro definitions bellow should be deleted
-#define Rnip_MAX 4
-#define Rnip_MIN 0
-#define RNIP_APERTURE Rnip_MAX-Rnip_MIN
-#define Rn_MAX 5
-#define Rn_MIN 0
-#define RN_APERTURE Rn_MAX-Rn_MIN
+#define APERTURE MAX_VEL-MIN_VEL
 #define hMAX 50
 #define mMAX 50
 #define ITMAX 3000
@@ -77,8 +71,6 @@ VFSA disturb parameters step.
 	float disturbance;
 	int i;
 	int nx=nz/(nv-1);
-	float maxvel=originalVel[itf]+0.5;
-	float minvel=originalVel[itf]-0.5;
 	float minz[2]={0.9,1.75};
 	float maxz[2]={1.45,1.9};
 

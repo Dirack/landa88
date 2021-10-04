@@ -6,7 +6,7 @@
 # 
 # Version 1.0
 # 
-# Programer: Rodolfo A C Neves (Dirack) 05/10/2020
+# Programmer: Rodolfo A C Neves (Dirack) 05/10/2020
 # 
 # Email: rodolfo_profissional@hotmail.com
 # 
@@ -54,7 +54,7 @@ landa88tomo.x:	$(SRCSTEREO)
 
 GDB1:
 	@echo "Running GDB script for landa88tomo.x"
-	$(call GDB,1,-ex "b 193" -ex "r",landa88tomo.x)
+	$(call GDB,1,-ex "b 224" -ex "r",landa88tomo.x)
 
 clean:
 	rm *.x

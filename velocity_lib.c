@@ -1,3 +1,20 @@
+/*
+	 velocity_lib.c (c)
+	 
+	 Purpose: Functions to update velocity model.
+	 	 
+	 Version 1.0
+	 
+	 Site: https://dirack.github.io
+	 
+	 Programmer: Rodolfo A. C. Neves (Dirack) 19/09/2021
+
+	 Email:  rodolfo_profissional@hotmail.com
+
+	 License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <rsf.h>
@@ -12,7 +29,7 @@ void calculateSplineCoeficients(int n, /* Vectors (x,y) dimension */
 
 Note: It Receives n points and two vectors x and y with n dimension.
 It returns a coeficients vector with 4 coeficients for each of the
-n-1 natural cubic splines, coef[n-1)*4].
+n-1 natural cubic splines, coef[(n-1)*4].
 
 IMPORTANT: The number of points must be equal or major than 3 (n>3)
 and x vector must be in crescent order.
@@ -82,9 +99,9 @@ and x vector must be in crescent order.
 
 void calcInterfacesZcoord(	float *zi, /* Interfaces depth coordinates */
 				int nint, /* Number of interfaces */
-				float xs,
-				int si,
-				float **coef)
+				float xs, /* x coordinate */
+				int si, /* Spline index */
+				float **coef /* Cubic spline coeficients */)
 /*< Calculate depth coordinates of the interfaces
  * Note: This function calculates interfaces depth coordinates and stores it
  * in the zi vector.
@@ -100,49 +117,45 @@ void calcInterfacesZcoord(	float *zi, /* Interfaces depth coordinates */
 	}
 }
 
-float calculateLocationMissfit(  float **s,
-			   float *sz, /* Depth coordinates of interfaces */
-			   int nsz, /* Dimension sz the vector */
-			   float osz,
-			   float dsz,
-				int nshot,
-				int itf)
-/*< Velocity model update
-Note: This function uses a sv (layers velocity) vector and sz (depth interfaces
-coordinates) vector to build the depth velocity model. There is nsv constant
-velocity layers in the model and nsv-1 interfaces separating them.
-These interfaces are described with nsz control points in the sz vector and
-they are interpolated using natural cubic spline interpolation.
+float calculateLocationMissfit( float **s, /* NIP sources location */
+			   	float *sz, /* Depth coordinates of interfaces */
+			   	int nsz, /* NIP sources number for each interface */
+			   	float osz, /* sz origin */
+			   	float dsz, /* sz sampling */
+				int nshot, /* Dimension of the sz vector */
+				int itf /* Interface to invert */)
+/*< Calculate misfit between NIP sources and interfaces
+Note: This function calculates L2 norm of the distances between NIP
+sources location in Z and interfaces. The assumption is that NIP sources
+are located in the interfaces, so the best velocity model minimize the distance
+between then
+
  >*/
 {
 
-	int i, j; // Loop counters
-	int k; // Layers index
+	int i; // loop counter
 	int l=0; // Splines index
-	float z; // Depth coordinate
 	float *zi; // Temporary vector to store depth coordinates
-	int nx=nsz;//(nsv-1);
-	float *x;
-	float** coef;
-	float xx;
-	float misfit = 0.;
-	float* szz;
+	float *x; // X coordinates of interface being inverted
+	float** coef; // Cubic splines coefficients
+	float misfit = 0.; // Misfit sum
+	float* szz; // Z coordinates of interface being inverted
 
-	x = sf_floatalloc(nx);
-	szz = sf_floatalloc(nx);
+	x = sf_floatalloc(nsz);
+	szz = sf_floatalloc(nsz);
 
-	for(i=0;i<nx;i++){
+	for(i=0;i<nsz;i++){
 		x[i] = i*dsz+osz;
-		szz[i]=sz[i+(itf*nx)];
+		szz[i]=sz[i+(itf*nsz)];
 	}
 
 	/* Calculate coeficients matrix (interfaces interpolation) */
-	coef = sf_floatalloc2(4*(nx-1),1);
-	calculateSplineCoeficients(nx,x,szz,coef,1);
+	coef = sf_floatalloc2(4*(nsz-1),1);
+	calculateSplineCoeficients(nsz,x,szz,coef,1);
 
 	zi = sf_floatalloc(1);
 
-	/* Calculate interfaces z coordinates */
+	/* Calculate interfaces z coordinates and misfit */
 	for(i=0;i<nshot;i++){
 
 		l = (int) (s[i][1]-osz)/dsz;
@@ -162,15 +175,15 @@ void updateVelocityModel(  int *n, /* Velocity model dimension n1=n[0] n2=n[1] *
 			   int nsv, /* Dimension of sv the vector */
 			   float *sz, /* Depth coordinates of interfaces */
 			   int nsz, /* Dimension sz the vector */
-			   float osz,
-			   float dsz,
+			   float osz, /* sz origin */
+			   float dsz, /* sz sampling */
 			   float *vel, /* Velocity model */
 			   int nvel /* Dimension of the vel vector */)
 /*< Velocity model update
 Note: This function uses a sv (layers velocity) vector and sz (depth interfaces
 coordinates) vector to build the depth velocity model. There is nsv constant
 velocity layers in the model and nsv-1 interfaces separating them.
-These interfaces are described with nsz control points in the sz vector and
+These interfaces are described with nsz control points (nodes) in the sz vector and
 they are interpolated using natural cubic spline interpolation.
  >*/
 {
@@ -180,10 +193,10 @@ they are interpolated using natural cubic spline interpolation.
 	int l=0; // Splines index
 	float z; // Depth coordinate
 	float *zi; // Temporary vector to store depth coordinates
-	int nx=nsz/(nsv-1);
-	float *x;
-	float** coef;
-	float xx;
+	int nx=nsz/(nsv-1); // Number of points for each interface
+	float *x; // X coordinates nodes
+	float** coef; // Cubic spline coefficients
+	float xx; // X coordinates in velocity model
 
 	x = sf_floatalloc(nx);
 	for(i=0;i<nx;i++)
@@ -220,8 +233,8 @@ void buildSlownessModelFromVelocityModel(int *n, /* Velocity model dimension n1=
 					 int nsv, /* Dimension of sv vector */
 					 float *sz, /* Depth coordinates of interfaces */
 					 int nsz, /* Dimension of sz vector */
-					 float osz,
-					 float dsz,
+					 float osz, /* sz origin */
+					 float dsz, /* sz sampling */
 					 float *vel, /* Velocity model */
 					 int nslow /* Dimension of vel vector */)
 /*< Slowness model build from velocity model

@@ -1,11 +1,10 @@
 /* Landa 1988 experiment: VFSA velocity inversion based on stereotomography and NIP tomography strategies
 
-This program is a reproduction of the experiment in the article 'A method for determination of velocity
-and depth from seismic reflection data' avaliable in the doc directory of this repository
+This program is a reproduction of the experiment in the article 'A method for determination of velocity and depth from seismic reflection data' avaliable in the doc directory of this repository
 
-The initial velocity model and NIP sources position used in this program is set up using sfnipmodsetup. This program does the forward modelling by ray tracying from NIP sources to surface and gets reflection traveltime.
+The initial velocity model and NIP sources position used in this program is set up using sfnipmodsetup that does the forward modeling by ray tracying from NIP sources to surface and gets reflection traveltime for a set of ray pairs.
 
-The time misfit is calculated by the difference between the reflection traveltime obtained in the forward modelling and the traveltime calculated by CRE traveltime approximation formula for RNIP and BETA parameters given. This time misfit is used as a convergence criteria for VFSA global optimization algorithm to obtain optimized velocity model.
+The time misfit is calculated by the difference between the reflection traveltime obtained in the forward modeling and the traveltime calculated by CRE traveltime approximation formula, for RNIP and BETA parameters given. This time misfit is used as a convergence criteria for VFSA global optimization algorithm to obtain optimized velocity model.
 
 */
 
@@ -21,7 +20,7 @@ int main(int argc, char* argv[])
 	int n[2]; // Velocity grid dimensions n[0]=n1, n[1]=n2
 	float d[2]; // Velocity grid sampling d[0]=d1, d[1]=d2
 	float o[2]; // Velocity grid origin o[0]=o1, o[1]=o2
-	float** s; // NIP source position (z,x)
+	float** s; // NIP sources position (z,x)
 	float* cnewv; // Temporary parameters vector used in VFSA
 	float* cnewz; // Temporary parameters vector used in VFSA
 	float* otsv; // Optimized parameters vector
@@ -54,11 +53,11 @@ int main(int argc, char* argv[])
 	float* sz; // Interfaces depth coordinates (cubic spline function)
 	int nsz; // Dimension of sz vector
 	float dsz; // sz vector sampling
-	float osz; // sz vector origin's
-	int nsv; // Dimension of sv vector
+	float osz; // sz vector origin
 	float* sv; // Layer's Velocity
-	float* mis; // Missfit of the current iteration
-	int itf; // Interface to invert
+	int nsv; // Dimension of sv vector
+	float* mis; // Misfit of the current iteration
+	int itf; // Interface to invert (index)
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -68,8 +67,8 @@ int main(int argc, char* argv[])
 	sf_file rnips; // RNIP parameter for each m0
 	sf_file betas; // BETA parameter for each m0
 	sf_file sz_file; // interfaces z coordinates (cubic spline function)
-	sf_file vz_file; // Layer's velocity
-	sf_file vspline; // Layers velocity
+	sf_file vz_file; // Layer's velocity (input)
+	sf_file vspline; // Layers velocity (output)
 	sf_file zspline; // Interfaces spline nodes 
 	sf_file misfit; // Misfit of the previous iteration
 	sf_file misinv; // Misfit result of this VFSA iteration
@@ -171,25 +170,27 @@ int main(int argc, char* argv[])
 
 	if(verb){
 		sf_warning("Command line Parameters");
-		sf_warning("v0=%f nit=%d temp0=%f c0=%f",v0,nit,temp0,c0);
+		sf_warning("v0=%f nit=%d temp0=%f c0=%f itf=%d",v0,nit,temp0,c0,itf);
 		sf_warning("Input file (Velocity model)");
 		sf_warning("n1=%d d1=%f o1=%f",*n,*d,*o);
 		sf_warning("n2=%d d2=%f o2=%f",*(n+1),*(d+1),*(o+1));
 		sf_warning("Input file (shotsfile)");
 		sf_warning("n1=%d",ndim);
 		sf_warning("n2=%d",nshot);
-		sf_warning("Input file (anglefile)");
+		sf_warning("Input file (anglefile, t0s, m0s, rnips, betas)");
 		sf_warning("n1=%d",ns);
 		sf_warning("Input file (sz)");
 		sf_warning("nz=%d",nsz);
+		sf_warning("Input file (vz)");
+		sf_warning("nv=%d",nsv);
 	}
 
 	/* Use previous misfit as the initial misfit value */
 	mis=sf_floatalloc(1);
 	sf_floatread(mis,1,misfit);
 	// TODO choose the tmis0 first value
-	//tmis0=mis[0];
-	tmis0=100;
+	tmis0=mis[0];
+	//tmis0=100;
 	otmis=tmis0;
 	free(mis);
 
@@ -204,7 +205,7 @@ int main(int argc, char* argv[])
 	sf_putfloat(velinv,"d3",1);
 	sf_putfloat(velinv,"o3",0);
 
-	/* cubic spline velocity matrix */
+	/* velocity and interfaces (output) */
 	sf_putint(vspline,"n1",nsv);
 	sf_putint(vspline,"n2",1);
 	sf_putint(zspline,"n1",nsz);
@@ -217,10 +218,15 @@ int main(int argc, char* argv[])
 	sf_putint(misinv,"n2",1);
 	sf_putint(misinv,"n3",1);
 	
+	/* Intiate optimal parameters vectors */
 	for(im=0;im<nsz;im++)
 		otsz[im]=sz[im];
 	for(im=0;im<nsv;im++)
 		otsv[im]=sv[im];
+
+	// TODO Next layer's velocity will be the same
+	// in order to avoid interference during inversion
+	sv[itf+1]=sv[itf];
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
 	for (q=0; q<nit; q++){
@@ -245,7 +251,7 @@ int main(int argc, char* argv[])
 			/* optimized parameters */
 			for(im=0;im<nsz;im++)
 				otsz[im]=cnewz[im];
-			for(im=0;im<nsv;im++)
+			for(im=0;im<itf+1;im++)
 				otsv[im]=cnewv[im];
 			tmis0 = fabs(tmis);
 		}
@@ -259,7 +265,7 @@ int main(int argc, char* argv[])
 		if (deltaE<=0){
 			for(im=0;im<nsz;im++)
 				sz[im]=cnewz[im];
-			for(im=0;im<nsv;im++)
+			for(im=0;im<itf+1;im++)
 				sv[im]=cnewv[im];
 			Em0 = -fabs(tmis);
 		} else {
@@ -267,7 +273,7 @@ int main(int argc, char* argv[])
 			if (PM > u){
 				for(im=0;im<nsz;im++)
 					sz[im]=cnewz[im];
-				for(im=0;im<nsv;im++)
+				for(im=0;im<itf+1;im++)
 					sv[im]=cnewv[im];
 				Em0 = -fabs(tmis);
 			}	

@@ -24,7 +24,7 @@ from rsf.recipes.kimodel import multiLayerModel as mlmod
 
 ni = int(ARGUMENTS.get('ni',1)) # Number of iterations in inversion loop
 nit = int(ARGUMENTS.get('nit',100)) # Number of iterations in stereoniptomo
-itf = int(ARGUMENTS.get('itf',1)) # Number of interfaces
+nitf = int(ARGUMENTS.get('nitf',1)) # Number of interfaces
 model = 'model_0'
 
 # Fetch dataset
@@ -169,7 +169,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.5,1.5,2.0'))
+	'''%('1.508,1.7,2.0'))
 
 # Initial time misfit for inversion
 mis='misfit_1'
@@ -178,7 +178,7 @@ Flow(mis,None,'spike nsp=1 mag=100 k1=1 n1=1')
 models = []
 misfit = []
 sz='sz_2'
-for j in range(itf):
+for j in range(nitf):
 
 	model = velinv
 	misfit.append('misfit_1')
@@ -211,7 +211,7 @@ for j in range(itf):
 		Flow([velinv,zspline,vspline,misinv],
 		[model,nipsources,angles,'t0s','m0s','rnips','betas',sz,sv,mis],
 		    '''
-		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} v0=1.508 nit=%d c0=0.1 temp0=5 nitf=%d
 		    ''' % (nit,j))
 
 		model = velinv
@@ -252,7 +252,7 @@ Plot('Fig/inverted-original',['inverted-interfaces','mod1-img'],'SideBySideIso')
 
 SConscript('SConscript2')
 
-Flow('models',models,'rcat axis=3 ${SOURCES[0:%d]}'%(ni*itf))
+Flow('models',models,'rcat axis=3 ${SOURCES[0:%d]}'%(ni*nitf))
 
 Plot('models',
 	'''
@@ -261,7 +261,7 @@ Plot('models',
 	''')
 
 # Plot misfit values for each iteration
-Flow('misfitvar',misfit,'rcat axis=1 ${SOURCES[0:%d]}'%(ni*itf))
+Flow('misfitvar',misfit,'rcat axis=1 ${SOURCES[0:%d]}'%(ni*nitf))
 
 Plot('misfitvar',
 	'''
