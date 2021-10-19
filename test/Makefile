@@ -6,14 +6,14 @@
 # 
 # Version 1.0
 # 
-# Programer: Rodolfo A C Neves (Dirack) 05/10/2020
+# Programmer: Rodolfo A C Neves (Dirack) 05/10/2020
 # 
 # Email: rodolfo_profissional@hotmail.com
 # 
 # License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
 DEP= ../raytrace.c ../grid2.c ../atela.c
-SRCLANDA = ../Mlanda88tomo.c ../tomography.c $(DEP) ../vfsacrsnh_lib.c
+SRCLANDA = ../Mlanda88tomo.c ../tomography.c ../velocity_lib.c $(DEP) ../vfsacrsnh_lib.c
 
 # model files: Stacked section and parameters cube from CRE stack
 PARCUBE=model/parametersCube.rsf
@@ -48,13 +48,13 @@ setup1:	landa88tomo/pick.txt landa88tomo/parametersCube.asc
 # Version of the landa88tomo program for GDB (GNU debugger)
 landa88tomo:	landa88tomo.x GDB1
 
-landa88tomo.x:	setup1 $(SRCSTEREO)
+landa88tomo.x:	$(SRCSTEREO)
 	@echo "Program landa88tomo.x for GDB built"
 	gcc -DGDB_DEBUG -g $(SRCLANDA) -I$$RSFSRC/include -I.. -L$$RSFSRC/lib -o $@ -lrsf -lm
 
 GDB1:
 	@echo "Running GDB script for landa88tomo.x"
-	$(call GDB,1,-ex "b 239" -ex "r",landa88tomo.x)
+	$(call GDB,1,-ex "b 224" -ex "r",landa88tomo.x)
 
 clean:
 	rm *.x

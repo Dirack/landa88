@@ -5,9 +5,9 @@
 	 	 
 	 Version 1.0
 	 
-	 Site: http://www.dirackslounge.online
+	 Site: https://dirack.github.io
 	 
-	 Programer: Rodolfo A. C. Neves (Dirack) 19/09/2019
+	 Programmer: Rodolfo A. C. Neves (Dirack) 19/09/2019
 
 	 Email:  rodolfo_profissional@hotmail.com
 
@@ -15,15 +15,15 @@
 
 */
 
-#define MAX 0.1
-#define MIN -0.1
-#define APERTURE 0.05
-#define Rnip_MAX 4
-#define Rnip_MIN 0
-#define RNIP_APERTURE Rnip_MAX-Rnip_MIN
-#define Rn_MAX 5
-#define Rn_MIN 0
-#define RN_APERTURE Rn_MAX-Rn_MIN
+/*
+TODO: Modify macro definition in search window for each interface.
+Large windows can make the result oscilate a lot and do not converge
+*/
+#define MAX_VEL 1.9
+#define MIN_VEL 1.45
+#define MAX_Z 1.3
+#define MIN_Z 0.9
+#define APERTURE MAX_VEL-MIN_VEL
 #define hMAX 50
 #define mMAX 50
 #define ITMAX 3000
@@ -51,11 +51,16 @@ float getVfsaIterationTemperature(int iteration,float dampingFactor,float inicia
 
 }
 
+/* TODO: Modify this function for multiple interfaces */
 void disturbParameters( float temperature, /* Temperature of this interation in VFSA */
-			float* disturbedParameter, /* Parameters disturbed vector */
-			float* parameter, /* original parameters vector */
-			int np, /*Number of parameters */
-			float scale /* Scale to multiply by disturbance */)
+			float* disturbedVel, /* Parameters disturbed vector */
+			float* originalVel, /* original parameters vector */
+			int nv, /*Number of parameters */
+			float* disturbedZ, /* Parameters disturbed vector */
+			float* originalZ, /* original parameters vector */
+			int nz, /*Number of parameters */
+			float scale /* Scale to multiply by disturbance */,
+			int itf)
 /*< Disturb parameters from the previous iteration of VFSA
  Note: It receives a parameter vector and distubs it accordingly to 
 VFSA disturb parameters step.
@@ -65,24 +70,51 @@ VFSA disturb parameters step.
 	float u;
 	float disturbance;
 	int i;
+	int nx=nz/(nv-1);
+	float minz[2]={0.9,1.75};
+	float maxz[2]={1.45,1.9};
 
-	for(i=0;i<np;i++){
+	for(i=0;i<nv;i++)		
+		disturbedVel[i]=originalVel[i];
+
+	u=getRandomNumberBetween0and1();
+				
+	disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
+
+	disturbedVel[itf] = originalVel[itf] + (disturbance*scale*10) * (0.05);
+
+	if (disturbedVel[itf] >= MAX_VEL) {
+
+		disturbedVel[itf] = MAX_VEL - (APERTURE) * getRandomNumberBetween0and1();
+			
+	}
+
+	if (disturbedVel[itf] <= MIN_VEL) {
+
+		disturbedVel[itf] = (APERTURE) * getRandomNumberBetween0and1() + MIN_VEL;
+			
+	}
+
+	for(i=0;i<nz;i++)
+		disturbedZ[i]=originalZ[i];
+	
+	for(i=(itf*nx);i<(itf*nx+nx);i++){
 
 		u=getRandomNumberBetween0and1();
 				
 		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-		disturbedParameter[i] = parameter[i] + (disturbance*scale) * (APERTURE);
+		disturbedZ[i] = originalZ[i] + (disturbance*scale*10) * (0.05);
 
-		if (disturbedParameter[i] >= MAX) {
+		if (disturbedZ[i] >= maxz[itf]) {
 
-			disturbedParameter[i] = MAX - (APERTURE) * getRandomNumberBetween0and1();
+			disturbedZ[i] = maxz[itf] - (maxz[i]-minz[i]) * getRandomNumberBetween0and1();
 			
 		}
 
-		if (disturbedParameter[i] <= MIN) {
+		if (disturbedZ[i] <= minz[itf]) {
 
-			disturbedParameter[i] = (APERTURE) * getRandomNumberBetween0and1() + MIN;
+			disturbedZ[i] = (maxz[i]-minz[i]) * getRandomNumberBetween0and1() + minz[itf];
 			
 		}
 	}
