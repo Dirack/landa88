@@ -169,7 +169,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.508,1.7,2.0'))
+	'''%('1.5,1.69,2.0'))
 
 # Initial time misfit for inversion
 mis='misfit_1'
@@ -211,7 +211,7 @@ for j in range(nitf):
 		Flow([velinv,zspline,vspline,misinv],
 		[model,nipsources,angles,'t0s','m0s','rnips','betas',sz,sv,mis],
 		    '''
-		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} v0=1.508 nit=%d c0=0.1 temp0=5 nitf=%d
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d
 		    ''' % (nit,j))
 
 		model = velinv

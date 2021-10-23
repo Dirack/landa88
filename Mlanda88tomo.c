@@ -2,7 +2,7 @@
 
 This program is a reproduction of the experiment in the article 'A method for determination of velocity and depth from seismic reflection data' avaliable in the doc directory of this repository
 
-The initial velocity model and NIP sources position used in this program is set up using sfnipmodsetup that does the forward modeling by ray tracying from NIP sources to surface and gets reflection traveltime for a set of ray pairs.
+The initial velocity model and NIP sources position used in this program is set up using sfnipmodsetup, that program does the forward modeling by ray tracying, from NIP sources to acquisition surface and gets reflection traveltime for a set of reflection ray pairs.
 
 The time misfit is calculated by the difference between the reflection traveltime obtained in the forward modeling and the traveltime calculated by CRE traveltime approximation formula, for RNIP and BETA parameters given. This time misfit is used as a convergence criteria for VFSA global optimization algorithm to obtain optimized velocity model.
 
@@ -243,8 +243,8 @@ int main(int argc, char* argv[])
 		tmis=0;
 	
 		/* Calculate time misfit through forward modeling */		
-		tmis=calculateTimeMissfit(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf);
-		tmis+=calculateLocationMissfit(s,cnewz,nsz/(nsv-1),osz,dsz,nshot,itf);
+		tmis=calculateTimeMisfit(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf);
+		tmis+=calculateLocationMisfit(s,cnewz,nsz/(nsv-1),osz,dsz,nshot,itf);
 
 		if(fabs(tmis) < fabs(tmis0) ){
 			otmis = fabs(tmis);
