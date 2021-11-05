@@ -188,7 +188,7 @@ sum of t=ts+tr.
 
 			m = (xr+xs)/2.;
 			h = (xr-xs)/2.;
-			t = creTimeApproximation(h,m,v0,t0[is],m0[is],RNIP[is],BETA[is],true);
+			t = creTimeApproximation(h,m,v0,t0[is],m0[is],RNIP[is],BETA[is],false);
 			tmis += fabs((ts+tr)-t);
 
 		} /* Loop over reflection rays */
