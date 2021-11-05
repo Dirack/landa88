@@ -23,12 +23,12 @@
 void calculateSplineCoeficients(int n, /* Vectors (x,y) dimension */
 				float* x, /* x coordinates */
 				float* y, /* y coordinates */
-				float** coef, /* Spline coeficients */
-				int n_stripes)
-/*< Function to calculate natural cubic spline coeficients
+				float** coef, /* Spline coefficients */
+				int n_stripes /* Model x axis is divided in n stripes */)
+/*< Function to calculate natural cubic spline coefficients
 
 Note: It Receives n points and two vectors x and y with n dimension.
-It returns a coeficients vector with 4 coeficients for each of the
+It returns a coefficients vector with 4 coefficients for each of the
 n-1 natural cubic splines, coef[(n-1)*4].
 
 IMPORTANT: The number of points must be equal or major than 3 (n>3)
@@ -86,7 +86,7 @@ and x vector must be in crescent order.
 		}
 		s2[0]=0; s2[n-1]=0;
 
-		/* Calculate spline coeficients */
+		/* Calculate spline coefficients */
 		for(i=0;i<n-1;i++){
 			ha = x[i+1]-x[i];
 			coef[k][0+i*4] = (s2[i+1]-s2[i])/(6*ha);
@@ -101,7 +101,7 @@ void calcInterfacesZcoord(	float *zi, /* Interfaces depth coordinates */
 				int nint, /* Number of interfaces */
 				float xs, /* x coordinate */
 				int si, /* Spline index */
-				float **coef /* Cubic spline coeficients */)
+				float **coef /* Cubic spline coefficients */)
 /*< Calculate depth coordinates of the interfaces
  * Note: This function calculates interfaces depth coordinates and stores it
  * in the zi vector.
@@ -117,7 +117,7 @@ void calcInterfacesZcoord(	float *zi, /* Interfaces depth coordinates */
 	}
 }
 
-float calculateLocationMissfit( float **s, /* NIP sources location */
+float calculateLocationMisfit( float **s, /* NIP sources location */
 			   	float *sz, /* Depth coordinates of interfaces */
 			   	int nsz, /* NIP sources number for each interface */
 			   	float osz, /* sz origin */
@@ -149,7 +149,7 @@ between then
 		szz[i]=sz[i+(itf*nsz)];
 	}
 
-	/* Calculate coeficients matrix (interfaces interpolation) */
+	/* Calculate coefficients matrix (interfaces interpolation) */
 	coef = sf_floatalloc2(4*(nsz-1),1);
 	calculateSplineCoeficients(nsz,x,szz,coef,1);
 
@@ -202,7 +202,7 @@ they are interpolated using natural cubic spline interpolation.
 	for(i=0;i<nx;i++)
 		x[i] = i*dsz+osz;
 
-	/* Calculate coeficients matrix (interfaces interpolation) */
+	/* Calculate coefficients matrix (interfaces interpolation) */
 	coef = sf_floatalloc2(4*(nx-1),nsv-1);
 	calculateSplineCoeficients(nx,x,sz,coef,nsv-1);
 

@@ -19,8 +19,10 @@
 TODO: Modify macro definition in search window for each interface.
 Large windows can make the result oscilate a lot and do not converge
 */
-#define MAX_VEL 1.9
+#define MAX_VEL 1.6
 #define MIN_VEL 1.45
+#define MAX_VEL2 1.8
+#define MIN_VEL2 1.6
 #define MAX_Z 1.3
 #define MIN_Z 0.9
 #define APERTURE MAX_VEL-MIN_VEL
@@ -71,8 +73,11 @@ VFSA disturb parameters step.
 	float disturbance;
 	int i;
 	int nx=nz/(nv-1);
+	// TODO pass max and min values through cmd
 	float minz[2]={0.9,1.75};
 	float maxz[2]={1.45,1.9};
+	float minvel[2]={1.45,1.65};
+	float maxvel[2]={1.60,1.85};
 
 	for(i=0;i<nv;i++)		
 		disturbedVel[i]=originalVel[i];
@@ -83,15 +88,15 @@ VFSA disturb parameters step.
 
 	disturbedVel[itf] = originalVel[itf] + (disturbance*scale*10) * (0.05);
 
-	if (disturbedVel[itf] >= MAX_VEL) {
+	if (disturbedVel[itf] >= maxvel[itf]) {
 
-		disturbedVel[itf] = MAX_VEL - (APERTURE) * getRandomNumberBetween0and1();
+		disturbedVel[itf] = maxvel[itf] - (maxvel[itf]-minvel[itf]) * getRandomNumberBetween0and1();
 			
 	}
 
-	if (disturbedVel[itf] <= MIN_VEL) {
+	if (disturbedVel[itf] <= minvel[itf]) {
 
-		disturbedVel[itf] = (APERTURE) * getRandomNumberBetween0and1() + MIN_VEL;
+		disturbedVel[itf] = (maxvel[itf]-minvel[itf]) * getRandomNumberBetween0and1() + minvel[itf];
 			
 	}
 
@@ -104,7 +109,7 @@ VFSA disturb parameters step.
 				
 		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-		disturbedZ[i] = originalZ[i] + (disturbance*scale*10) * (0.05);
+		disturbedZ[i] = originalZ[i] + (disturbance*scale);
 
 		if (disturbedZ[i] >= maxz[itf]) {
 

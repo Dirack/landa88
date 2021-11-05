@@ -1,3 +1,21 @@
+/*
+	 tomography.c (c)
+	 
+	 Purpose: 'Mvfsacrsnh.c' library for raytracing and traveltime
+	 calculation.
+	 	 
+	 Version 1.0
+	 
+	 Site: https://dirack.github.io
+	 
+	 Programmer: Rodolfo A. C. Neves (Dirack) 19/09/2019
+
+	 Email:  rodolfo_profissional@hotmail.com
+
+	 License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
+
+*/
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -5,7 +23,7 @@
 #include "raytrace.h"
 #include "tomography.h"
 
-#define NR 5
+#define NR 10
 #define NT 5000
 #define DT 0.001
 #ifndef GDB_DEBUG
@@ -17,26 +35,27 @@
 #endif
 /*^*/
 
-float creTimeApproximation(float h, 
-			 float m,
-			 float v0,
-			 float t0,
-			 float m0,
-			 float RNIP,
-			 float BETA,
-			 bool cds)
-/*< CRE traveltime approximation t(m,h)
-Note: If cds parameter is false, it uses the CRE formula to calculate time.
+float creTimeApproximation(float h, // Half-offset
+			 float m, // CMP
+			 float v0, // Near surface velocity
+			 float t0, // Normal ray traveltime
+			 float m0, // Central CMP
+			 float RNIP, // CRE parameter
+			 float BETA, // CRE parameter
+			 bool cds // Use CDS condition?
+			 )
+/*< Calculate CRE traveltime approximation t(m,h)
+Note: If cds parameter is false, it uses the CRE formula to calculate traveltime.
 If cds parameter is true, it uses the non-hyperbolic CRS formula with CDS condition (RN=RNIP)
-to calculate time.
+to calculate traveltime.
 >*/
 { 
-	float alpha;
-	float d = m-m0;
-	float c1;
-	float c2;
-	float a1, a2, b2, b1, Fd, Fd1, Fd2;
-	float t;
+	float alpha; // Asymmetry parameter
+	float d = m-m0; // Distance to central CMP m0
+	float c1; // CRE coefficient
+	float c2; // CRE coefficient
+	float a1, a2, b2, b1, Fd, Fd1, Fd2; // Non-hyperbolic CRS coefficient
+	float t; // traveltime t(m,h)
 
 	if(!cds){
 		c1 = (d+h)/RNIP;
@@ -57,7 +76,7 @@ to calculate time.
 	return t;
 }
 
-float calculateTimeMissfit(float** s, /* NIP sources matrix (z,x) pairs */
+float calculateTimeMisfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   float v0, /* Near surface velocity */
 			   float* t0, /* Normal ray traveltime for each NIP source */
 			   float* m0, /* Central CMP for each NIP source */
@@ -69,21 +88,30 @@ float calculateTimeMissfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   float *slow, /* Slowness velociy model */
 			   float *a, /* Normal ray angle for each NIP source (degrees) */
 			   int ns, /* Number of NIP sources */
-				int itf)
-/*< Return time missfit sum of source-NIP-receiver rays 
+			   int itf /* Interface being inverted */)
+/*< Return L2 norm of the time misfit: The time misfit is the difference
+between the traveltime calculated using raytracing and the traveltime calculated
+with the CRE traveltime formula 
 
-Note: This function traces nr reflection rays pairs from each NIP source
-position passed though s matrix. It also calculate the difference between
-the traveltime of the traced rays with calculated traveltime using CRE
-traveltime approximation to calculate the time misfit returned by the function.
+Note: This function traces nr reflection rays from each NIP source
+(a depth point coordinate) to acquisition surface. NIP sources coordinates
+are passed through s matrix. This function returns the L2 norm of the difference
+between the traveltime of the reflection rays and the calculated traveltime using CRE
+traveltime approximation. This difference is time misfit.
+
+To simulate a reflection ray, this function traces a ray from the NIP source to the
+source location in the acquisition surface and it stores its traveltime ts. And this
+function traces a ray from the NIP source to the receiver location in the acquisition
+surface and it stores the traveltime tr. The total reflection ray traveltime will be the
+sum of t=ts+tr.
  >*/
 {
 
 	float currentRayAngle; // Emergence angle from source (radians)
 	int i, ir, it, is; // loop counters
 	float p[2]; // slowness vector
-	float t; // Ray traveltime
-	float nrdeg; // Emergence angle in degrees
+	float t=0.; // Ray traveltime
+	float nrdeg; // Normal ray angle in degrees
 	int nt=NT; // number of time samples in each ray
 	int nr=NR; // number of reflection ray pairs for each source
 	float dt=DT; // time sampling of rays
@@ -92,10 +120,10 @@ traveltime approximation to calculate the time misfit returned by the function.
 	float m; // CMP
 	float h; // half-offset
 	float tmis=0; // time misfit
-	float xs; // Source position
-	float xr; // Receiver position
-	float tr; // NIP to receiver ray traveltime
-	float ts; // NIP to source ray traveltime
+	float xs=0.; // Source position
+	float xr=0.; // Receiver position
+	float tr=0.; // NIP to receiver ray traveltime
+	float ts=0.; // NIP to source ray traveltime
 	float *x; // Source position (z,x)
 
 	x = sf_floatalloc(2);
@@ -104,7 +132,7 @@ traveltime approximation to calculate the time misfit returned by the function.
 
 		x[0]=s[is][0];
 		x[1]=s[is][1];
-		nrdeg = a[is]; // angle in degree
+		nrdeg = a[is];
 
 		for(ir=0;ir<nr;ir++){
 
@@ -130,7 +158,7 @@ traveltime approximation to calculate the time misfit returned by the function.
 				/* Ray tracing */
 				it = trace_ray (rt, x, p, traj);
 
-				if(it>0){
+				if(it>0){ // Ray endpoint at acquisition surface
 					t = it*dt;
 					if(i==0){ // Keep NIP to source ray traveltime
 						ts=t;
@@ -144,8 +172,10 @@ traveltime approximation to calculate the time misfit returned by the function.
 					nt += 1000;
 				}else{ // Side or bottom ray
 					/* TODO to correct the way you treat side rays */
-					sf_warning("=> x=%f y=%f t=%f",s[1],s[0],t);
-					sf_error("Bad angle, ray get to the model side/bottom");
+					sf_warning("Ray endpoint => x=%f y=%f p[0]=%f p[1]=%f",x[1],x[0],p[0],p[1]);
+					sf_warning("Ray starting point=> x=%f y=%f",s[1],s[0]);
+					sf_warning("Ray traveltime => t=%f",t);
+					sf_error("Bad ray angle, ray get to the model side/bottom");
 				}
 
 				/* Raytrace close */
@@ -158,7 +188,7 @@ traveltime approximation to calculate the time misfit returned by the function.
 
 			m = (xr+xs)/2.;
 			h = (xr-xs)/2.;
-			t = creTimeApproximation(h,m,v0,t0[is],m0[is],RNIP[is],BETA[is],true);
+			t = creTimeApproximation(h,m,v0,t0[is],m0[is],RNIP[is],BETA[is],false);
 			tmis += fabs((ts+tr)-t);
 
 		} /* Loop over reflection rays */
