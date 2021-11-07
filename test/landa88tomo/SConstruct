@@ -39,6 +39,7 @@ Flow('pick.txt','stackedSection','ipick')
 
 # Setup files
 SConscript('SConscript1')
+SConscript('SConscript3')
 
 # Original velocity model
 xmax = 6.0
@@ -209,9 +210,9 @@ for j in range(nitf):
 		# forward modeling
 		# do a ray-tracing from NIP sources to acquisition surface and measure traveltime
 		Flow([velinv,zspline,vspline,misinv],
-		[model,nipsources,angles,'t0s','m0s','rnips','betas',sz,sv,mis],
+		[model,nipsources,angles,'t0s','m0s','rnips','betas',sz,sv,mis,'multiLayerDataCube'],
 		    '''
-		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d
 		    ''' % (nit,j))
 
 		model = velinv

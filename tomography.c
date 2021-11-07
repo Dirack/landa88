@@ -23,9 +23,6 @@
 #include "raytrace.h"
 #include "tomography.h"
 
-#define NR 10
-#define NT 5000
-#define DT 0.001
 #ifndef GDB_DEBUG
 	#define DSLOW 0.04
 	#define DANGLE 1.0
@@ -76,6 +73,16 @@ to calculate traveltime.
 	return t;
 }
 
+void rayEndpointError(float *x,float *p,float **s,float t)
+/*< Output error message if ray get to the model side or bottom >*/
+{
+	/* TODO to correct the way you treat side rays */
+	sf_warning("Ray endpoint => x=%f y=%f p[0]=%f p[1]=%f",x[1],x[0],p[0],p[1]);
+	sf_warning("Ray starting point=> x=%f y=%f",s[1],s[0]);
+	sf_warning("Ray traveltime => t=%f",t);
+	sf_error("Bad ray angle, ray get to the model side/bottom");
+}
+
 float calculateTimeMisfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   float v0, /* Near surface velocity */
 			   float* t0, /* Normal ray traveltime for each NIP source */
@@ -93,6 +100,9 @@ float calculateTimeMisfit(float** s, /* NIP sources matrix (z,x) pairs */
 between the traveltime calculated using raytracing and the traveltime calculated
 with the CRE traveltime formula 
 
+Values of x and p are changed inside the function.
+The trajectory traj is stored as follows: {z0,y0,z1,y1,z2,y2,...} in 2-D
+
 Note: This function traces nr reflection rays from each NIP source
 (a depth point coordinate) to acquisition surface. NIP sources coordinates
 are passed through s matrix. This function returns the L2 norm of the difference
@@ -107,14 +117,12 @@ sum of t=ts+tr.
  >*/
 {
 
-	float currentRayAngle; // Emergence angle from source (radians)
-	int i, ir, it, is; // loop counters
+	int is, it, i; // loop counter
 	float p[2]; // slowness vector
 	float t=0.; // Ray traveltime
-	float nrdeg; // Normal ray angle in degrees
-	int nt=NT; // number of time samples in each ray
-	int nr=NR; // number of reflection ray pairs for each source
-	float dt=DT; // time sampling of rays
+	float normalRayAngleRad; // Normal ray angle in radians
+	int nt=10000; // number of time samples in each ray
+	float dt=0.001; // time sampling of rays
 	raytrace rt; // raytrace struct
 	float** traj; // Ray trajectory (z,x)
 	float m; // CMP
@@ -125,73 +133,70 @@ sum of t=ts+tr.
 	float tr=0.; // NIP to receiver ray traveltime
 	float ts=0.; // NIP to source ray traveltime
 	float *x; // Source position (z,x)
+	float *nrnip; // Calculate normal ray rnips
+	float *nbeta; // Calculate normal ray betas
 
 	x = sf_floatalloc(2);
+	nrnip = sf_floatalloc(ns);
+	nbeta = sf_floatalloc(ns);
 
 	for(is=(itf*ns);is<(itf*ns+ns);is++){
 
 		x[0]=s[is][0];
 		x[1]=s[is][1];
-		nrdeg = a[is];
+		
+		normalRayAngleRad = a[is]*DEG2RAD;
+		p[0] = -cosf(normalRayAngleRad);
+		p[1] = sinf(normalRayAngleRad);
 
-		for(ir=0;ir<nr;ir++){
+		/* initialize ray tracing object */
+		rt = raytrace_init(2,true,nt,dt,n,o,d,slow,ORDER);
 
-			for(i=0; i<2; i++){
+		traj = sf_floatalloc2(2,nt+1);
 
-				/* initialize ray tracing object */
-				rt = raytrace_init(2,true,nt,dt,n,o,d,slow,ORDER);
+		/* Ray tracing */
+		it = trace_ray (rt, x, p, traj);
 
-				traj = sf_floatalloc2(2,nt+1);
-				
-				/* initialize ray direction */
-				if(i==0){
-					// NIP to source ray
-					currentRayAngle=(nrdeg-(ir+1)*DANGLE)*DEG2RAD;
-				}else{
-					// NIP to receiver ray
-					currentRayAngle=(nrdeg+(ir+1)*DANGLE)*DEG2RAD;
-				}
+		if(it>0){ // Ray endpoint at acquisition surface
+			t = it*dt;
+			ts=t;
+			tr=t;
+			xs=x[1];
+			xr=x[1];
+			i = it >= 2 ? it - 2 : it - 1;
+                        /* Escape vector */
+                        x[0]=traj[it][0];
+                        x[1]=traj[it][1];
+                        x[0]-=traj[i][0];
+                        x[1]-=traj[i][1];
+			/* Dot product with unit vector pointing upward */
+                        t = sqrt(x[0]*x[0]+x[1]*x[1]); /* Length */
+			t = acos(x[0]/t)-SF_PI;
+			if(x[1]<0) t = -t;
 
-				p[0] = -cosf(currentRayAngle);
-				p[1] = sinf(currentRayAngle);
+			/* Calculate RNIP */
+			nrnip[is]=sqrt((x[0]-s[is][0])*(x[0]-s[is][0])+(x[1]-s[is][1])*(x[1]-s[is][1]));	
+			/* Keep BETA */
+			nbeta[is]=t;
+		}else if(it == 0){ // Ray endpoint inside model
+			t = abs(nt)*dt;
+			rayEndpointError(x,p,s,t);
+		}else{ // Side or bottom ray
+			rayEndpointError(x,p,s,t);
+		}
 
-				/* Ray tracing */
-				it = trace_ray (rt, x, p, traj);
+		/* Raytrace close */
+		raytrace_close(rt);
+		free(traj);
 
-				if(it>0){ // Ray endpoint at acquisition surface
-					t = it*dt;
-					if(i==0){ // Keep NIP to source ray traveltime
-						ts=t;
-						xs=x[1];
-					}else{ // Keep NIP to receiver ray traveltime
-						tr=t;
-						xr=x[1];
-					}
-				}else if(it == 0){ // Ray endpoint inside model
-					t = abs(nt)*dt;
-					nt += 1000;
-				}else{ // Side or bottom ray
-					/* TODO to correct the way you treat side rays */
-					sf_warning("Ray endpoint => x=%f y=%f p[0]=%f p[1]=%f",x[1],x[0],p[0],p[1]);
-					sf_warning("Ray starting point=> x=%f y=%f",s[1],s[0]);
-					sf_warning("Ray traveltime => t=%f",t);
-					sf_error("Bad ray angle, ray get to the model side/bottom");
-				}
 
-				/* Raytrace close */
-				raytrace_close(rt);
-				free(traj);
-
-				x[0] = s[is][0];
-				x[1] = s[is][1];
-			} /* Loop over source-NIP-receiver rays */
-
-			m = (xr+xs)/2.;
-			h = (xr-xs)/2.;
-			t = creTimeApproximation(h,m,v0,t0[is],m0[is],RNIP[is],BETA[is],false);
-			tmis += fabs((ts+tr)-t);
-
-		} /* Loop over reflection rays */
+		m = (xr+xs)/2.;
+		h = (xr-xs)/2.;
+		t = creTimeApproximation(h,m,v0,t0[is],m0[is],RNIP[is],BETA[is],false);
+		tmis += fabs((ts+tr)-t);
+		//sf_warning("rnip[%d]=%f %f",is,nrnip[is],RNIP[is]);
+		sf_warning("beta[%d]=%f %f",is,nbeta[is]*180/3.1415,BETA[is]*180/3.1415);
+		//sf_warning("t0[%d]=%f %f",is,ts+tr,t0[is]);
 
 	} /* Loop over NIP sources */
 

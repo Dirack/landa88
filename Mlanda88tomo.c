@@ -58,6 +58,10 @@ int main(int argc, char* argv[])
 	int nsv; // Dimension of sv vector
 	float* mis; // Misfit of the current iteration
 	int itf; // Interface to invert (index)
+	float ***data; // Prestack data A(m,h,t)
+	int data_n[3];
+	float data_o[3];
+	float data_d[3];
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -72,6 +76,7 @@ int main(int argc, char* argv[])
 	sf_file zspline; // Interfaces spline nodes 
 	sf_file misfit; // Misfit of the previous iteration
 	sf_file misinv; // Misfit result of this VFSA iteration
+	sf_file datafile; // Prestack data A(m,h,t)
 
 	sf_init(argc,argv);
 
@@ -89,6 +94,7 @@ int main(int argc, char* argv[])
 	vz_file = sf_input("vz");
 	misfit = sf_input("misfit");
 	misinv = sf_output("misinv");
+	datafile = sf_input("data");
 
 	/* Velocity model: get 2D grid parameters */
 	if(!sf_histint(vel,"n1",n)) sf_error("No n1= in input");
@@ -97,6 +103,17 @@ int main(int argc, char* argv[])
 	if(!sf_histfloat(vel,"d2",d+1)) sf_error("No d2= in input");
 	if(!sf_histfloat(vel,"o1",o)) o[0]=0.;
 	if(!sf_histfloat(vel,"o2",o+1)) o[1]=0.;
+
+	/* Prestack data cube */
+	if(!sf_histint(datafile,"n1",data_n)) sf_error("No n1= in data");
+	if(!sf_histint(datafile,"n2",data_n+1)) sf_error("No n2= in data");
+	if(!sf_histint(datafile,"n3",data_n+2)) sf_error("No n3= in data");
+	if(!sf_histfloat(datafile,"d1",data_d)) sf_error("No d1= in data");
+	if(!sf_histfloat(datafile,"d2",data_d+1)) sf_error("No d2= in data");
+	if(!sf_histfloat(datafile,"d3",data_d+2)) sf_error("No d3= in data");
+	if(!sf_histfloat(datafile,"o1",data_o)) sf_error("No o1= in data");
+	if(!sf_histfloat(datafile,"o2",data_o+1)) sf_error("No o2= in data");
+	if(!sf_histfloat(datafile,"o3",data_o+2)) sf_error("No o3= in data");
 	
 	if(!sf_getbool("verb",&verb)) verb=true;
 	/* verbose parameter (y/n) */
@@ -141,6 +158,10 @@ int main(int argc, char* argv[])
 	cnewz = sf_floatalloc(nsz); 
 	otsv = sf_floatalloc(nsv);
 	otsz = sf_floatalloc(nsz);
+
+	/* Read data cube */
+	data = sf_floatalloc3(data_n[0],data_n[1],data_n[2]);
+	sf_floatread(data[0][0],data_n[0]*data_n[1]*data_n[2],datafile);
 
 	/* Anglefile: get initial emergence angle */
 	if(!sf_histint(angles,"n1",&ns)) sf_error("No n1= in anglefile");
