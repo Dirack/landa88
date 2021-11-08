@@ -95,7 +95,11 @@ float calculateTimeMisfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   float *slow, /* Slowness velociy model */
 			   float *a, /* Normal ray angle for each NIP source (degrees) */
 			   int ns, /* Number of NIP sources */
-			   int itf /* Interface being inverted */)
+			   int itf, /* Interface being inverted */
+			   float ***data,
+			   int *data_n,
+			   float *data_o,
+			   float *data_d)
 /*< Return L2 norm of the time misfit: The time misfit is the difference
 between the traveltime calculated using raytracing and the traveltime calculated
 with the CRE traveltime formula 
@@ -189,13 +193,12 @@ sum of t=ts+tr.
 		raytrace_close(rt);
 		free(traj);
 
-
 		m = (xr+xs)/2.;
 		h = (xr-xs)/2.;
 		t = creTimeApproximation(h,m,v0,t0[is],m0[is],RNIP[is],BETA[is],false);
 		tmis += fabs((ts+tr)-t);
 		//sf_warning("rnip[%d]=%f %f",is,nrnip[is],RNIP[is]);
-		sf_warning("beta[%d]=%f %f",is,nbeta[is]*180/3.1415,BETA[is]*180/3.1415);
+		//sf_warning("beta[%d]=%f %f",is,nbeta[is]*180/3.1415,BETA[is]*180/3.1415);
 		//sf_warning("t0[%d]=%f %f",is,ts+tr,t0[is]);
 
 	} /* Loop over NIP sources */

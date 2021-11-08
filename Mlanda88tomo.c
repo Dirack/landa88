@@ -264,7 +264,8 @@ int main(int argc, char* argv[])
 		tmis=0;
 	
 		/* Calculate time misfit through forward modeling */		
-		tmis=calculateTimeMisfit(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf);
+		tmis=calculateTimeMisfit(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf,data,data_n,data_o,data_d);
+
 		tmis+=calculateLocationMisfit(s,cnewz,nsz/(nsv-1),osz,dsz,nshot,itf);
 
 		if(fabs(tmis) < fabs(tmis0) ){
