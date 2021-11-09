@@ -59,9 +59,9 @@ int main(int argc, char* argv[])
 	float* mis; // Misfit of the current iteration
 	int itf; // Interface to invert (index)
 	float ***data; // Prestack data A(m,h,t)
-	int data_n[3];
-	float data_o[3];
-	float data_d[3];
+	int data_n[3]; // n1, n2, n3 dimension of data
+	float data_o[3]; // o1, o2, o3 axis origins of data
+	float data_d[3]; // d1, d2, d3 sampling of data
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
 	otsv = sf_floatalloc(nsv);
 	otsz = sf_floatalloc(nsz);
 
-	/* Read data cube */
+	/* Read prestack data cube */
 	data = sf_floatalloc3(data_n[0],data_n[1],data_n[2]);
 	sf_floatread(data[0][0],data_n[0]*data_n[1]*data_n[2],datafile);
 
@@ -195,6 +195,10 @@ int main(int argc, char* argv[])
 		sf_warning("Input file (Velocity model)");
 		sf_warning("n1=%d d1=%f o1=%f",*n,*d,*o);
 		sf_warning("n2=%d d2=%f o2=%f",*(n+1),*(d+1),*(o+1));
+		sf_warning("Input file (Prestack data)");
+		sf_warning("n1=%d d1=%f o1=%f",*data_n,*data_d,*data_o);
+		sf_warning("n2=%d d2=%f o2=%f",*(n+1),*(d+1),*(o+1));
+		sf_warning("n3=%d d3=%f o3=%f",*(n+2),*(d+2),*(o+2));
 		sf_warning("Input file (shotsfile)");
 		sf_warning("n1=%d",ndim);
 		sf_warning("n2=%d",nshot);
