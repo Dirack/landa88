@@ -39,7 +39,7 @@ Flow('pick.txt','stackedSection','ipick')
 
 # Setup files
 SConscript('SConscript1')
-SConscript('SConscript3')
+#SConscript('SConscript3')
 
 # Original velocity model
 xmax = 6.0
@@ -170,7 +170,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.5,1.69,2.0'))
+	'''%('1.57,1.69,2.0'))
 
 # Initial time misfit for inversion
 mis='misfit_1'

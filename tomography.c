@@ -139,6 +139,13 @@ sum of t=ts+tr.
 	float *x; // Source position (z,x)
 	float *nrnip; // Calculate normal ray rnips
 	float *nbeta; // Calculate normal ray betas
+	float sumAmplitudes;
+	float cm0;
+	float ct0;
+	float alpha;
+	int ih;
+	int im;
+	int tetai;
 
 	x = sf_floatalloc(2);
 	nrnip = sf_floatalloc(ns);
@@ -162,45 +169,44 @@ sum of t=ts+tr.
 		it = trace_ray (rt, x, p, traj);
 
 		if(it>0){ // Ray endpoint at acquisition surface
-			t = it*dt;
-			ts=t;
-			tr=t;
-			xs=x[1];
-			xr=x[1];
-			i = it >= 2 ? it - 2 : it - 1;
+
+			cm0 = x[1];
+			ct0 = it*dt;
+
                         /* Escape vector */
+			i = it >= 2 ? it - 2 : it - 1;
                         x[0]=traj[it][0];
                         x[1]=traj[it][1];
                         x[0]-=traj[i][0];
                         x[1]-=traj[i][1];
-			/* Dot product with unit vector pointing upward */
-                        t = sqrt(x[0]*x[0]+x[1]*x[1]); /* Length */
-			t = acos(x[0]/t)-SF_PI;
-			if(x[1]<0) t = -t;
 
 			/* Calculate RNIP */
 			nrnip[is]=sqrt((x[0]-s[is][0])*(x[0]-s[is][0])+(x[1]-s[is][1])*(x[1]-s[is][1]));	
-			/* Keep BETA */
+
+			/* Calculate BETA */
+			/* Dot product with unit vector pointing upward */
+                        t = sqrt(x[0]*x[0]+x[1]*x[1]); /* Length */
+			t = acos(x[0]/t)-SF_PI; /* Teta */
+			if(x[1]<0) t = -t;
+
 			nbeta[is]=t;
+
+			alpha = sinf(nbeta[is])/nrnip[is];
 
 			/* CRE STACKING */
 			sumAmplitudes = 0;
 
-			cm0 = xs;
-			ct0 = ts+tr;
-			alpha = sinf(nbeta[is])/nrnip[is];
 
-			/* CRE trajectory calculation */
-
-			/* Semblance over CRE traveltime curve */
+			/* CRE trajectory calculation 
+			   Semblance over CRE traveltime curve */
 			for(ih=0; ih < 10; ih++){
 
 				h = ih*data_d[1]+data_o[1];
 
 				if(alpha <= 0.001 && alpha >= -0.001){
-                                        m = m0;
+                                        m = cm0;
                         	}else{
-                                        m = m0 + (1/(2*alpha)) * (1 - sqrt(1 + 4 * alpha * alpha * h * h));
+                                        m = cm0 + (1/(2*alpha)) * (1 - sqrt(1 + 4 * alpha * alpha * h * h));
                                 }
 
 				im = (int) m/data_d[2];
