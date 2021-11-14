@@ -197,8 +197,8 @@ int main(int argc, char* argv[])
 		sf_warning("n2=%d d2=%f o2=%f",*(n+1),*(d+1),*(o+1));
 		sf_warning("Input file (Prestack data)");
 		sf_warning("n1=%d d1=%f o1=%f",*data_n,*data_d,*data_o);
-		sf_warning("n2=%d d2=%f o2=%f",*(n+1),*(d+1),*(o+1));
-		sf_warning("n3=%d d3=%f o3=%f",*(n+2),*(d+2),*(o+2));
+		sf_warning("n2=%d d2=%f o2=%f",*(data_n+1),*(data_d+1),*(data_o+1));
+		sf_warning("n3=%d d3=%f o3=%f",*(data_n+2),*(data_d+2),*(data_o+2));
 		sf_warning("Input file (shotsfile)");
 		sf_warning("n1=%d",ndim);
 		sf_warning("n2=%d",nshot);
@@ -270,9 +270,9 @@ int main(int argc, char* argv[])
 		/* Calculate time misfit through forward modeling */		
 		tmis=calculateTimeMisfit(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf,data,data_n,data_o,data_d);
 
-		tmis+=calculateLocationMisfit(s,cnewz,nsz/(nsv-1),osz,dsz,nshot,itf);
+		//tmis+=calculateLocationMisfit(s,cnewz,nsz/(nsv-1),osz,dsz,nshot,itf);
 
-		if(fabs(tmis) < fabs(tmis0) ){
+		if(fabs(tmis) > fabs(tmis0) ){
 			otmis = fabs(tmis);
 			/* optimized parameters */
 			for(im=0;im<nsz;im++)
@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
 			}	
 		}	
 			
-		sf_warning("%d/%d => (%f)",q+1,nit,otmis);
+		sf_warning("%d/%d itf=%d => (%f)",q+1,nit,itf,otmis);
 
 	} /* loop over VFSA iterations */
 
@@ -319,4 +319,5 @@ int main(int argc, char* argv[])
 	sf_floatwrite(otsv,nsv,vspline);
 	sf_floatwrite(otsz,nsz,zspline);
 	sf_floatwrite(&otmis,1,misinv);
+
 }

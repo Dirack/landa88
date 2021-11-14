@@ -140,16 +140,23 @@ sum of t=ts+tr.
 	float *nrnip; // Calculate normal ray rnips
 	float *nbeta; // Calculate normal ray betas
 	float sumAmplitudes;
+	float sumAmplitudes2;
 	float cm0;
 	float ct0;
 	float alpha;
 	int ih;
 	int im;
 	int tetai;
+	int numSamples=0;
 
 	x = sf_floatalloc(2);
 	nrnip = sf_floatalloc(ns);
 	nbeta = sf_floatalloc(ns);
+
+
+	/* initialize ray tracing object */
+	rt = raytrace_init(2,true,nt,dt,n,o,d,slow,ORDER);
+	traj = sf_floatalloc2(2,nt+1);
 
 	for(is=(itf*ns);is<(itf*ns+ns);is++){
 
@@ -160,20 +167,15 @@ sum of t=ts+tr.
 		p[0] = -cosf(normalRayAngleRad);
 		p[1] = sinf(normalRayAngleRad);
 
-		/* initialize ray tracing object */
-		rt = raytrace_init(2,true,nt,dt,n,o,d,slow,ORDER);
-
-		traj = sf_floatalloc2(2,nt+1);
 
 		/* Ray tracing */
 		it = trace_ray (rt, x, p, traj);
-
 		if(it>0){ // Ray endpoint at acquisition surface
 
 			cm0 = x[1];
-			ct0 = it*dt;
+			ct0 = 2*it*dt;
 
-                        /* Escape vector */
+                        /* Escape vector */ 
 			i = it >= 2 ? it - 2 : it - 1;
                         x[0]=traj[it][0];
                         x[1]=traj[it][1];
@@ -181,7 +183,7 @@ sum of t=ts+tr.
                         x[1]-=traj[i][1];
 
 			/* Calculate RNIP */
-			nrnip[is]=sqrt((x[0]-s[is][0])*(x[0]-s[is][0])+(x[1]-s[is][1])*(x[1]-s[is][1]));	
+			nrnip[is-(itf*ns)]=sqrt((x[0]-s[is][0])*(x[0]-s[is][0])+(x[1]-s[is][1])*(x[1]-s[is][1]));	
 
 			/* Calculate BETA */
 			/* Dot product with unit vector pointing upward */
@@ -189,17 +191,16 @@ sum of t=ts+tr.
 			t = acos(x[0]/t)-SF_PI; /* Teta */
 			if(x[1]<0) t = -t;
 
-			nbeta[is]=t;
+			nbeta[is-(itf*ns)]=t;
 
-			alpha = sinf(nbeta[is])/nrnip[is];
+			alpha = sinf(nbeta[is-(itf*ns)])/nrnip[is-(itf*ns)];
 
 			/* CRE STACKING */
 			sumAmplitudes = 0;
 
-
 			/* CRE trajectory calculation 
 			   Semblance over CRE traveltime curve */
-			for(ih=0; ih < 10; ih++){
+			for(ih=0; ih < 20; ih++){
 
 				h = ih*data_d[1]+data_o[1];
 
@@ -209,15 +210,20 @@ sum of t=ts+tr.
                                         m = cm0 + (1/(2*alpha)) * (1 - sqrt(1 + 4 * alpha * alpha * h * h));
                                 }
 
-				im = (int) m/data_d[2];
+				im = (int) (m/data_d[2]);
 
-				tetai = (int) ((double) creTimeApproximation(h,m,v0,ct0,cm0,nrnip[is],nbeta[is],false)/data_d[0]);
+				tetai = (int) ((double) creTimeApproximation(h,m,v0,ct0,cm0,nrnip[is-(itf*ns)],nbeta[is-(itf*ns)],false)/data_d[0]);
 
 				sumAmplitudes += data[im][ih][tetai];
 
+				sumAmplitudes2 += (sumAmplitudes*sumAmplitudes);
+
+				numSamples++;
+
 			} /* loop over h*/
 
-			tmis += sumAmplitudes;
+				//sf_warning("rnip=%f RNIP=%f",nrnip[is-(itf*ns)],RNIP[is-(itf*ns)]);
+			//tmis += sumAmplitudes;
 
 		}else if(it == 0){ // Ray endpoint inside model
 			t = abs(nt)*dt;
@@ -227,19 +233,14 @@ sum of t=ts+tr.
 		}
 
 		/* Raytrace close */
-		raytrace_close(rt);
-		free(traj);
-
-		//m = (xr+xs)/2.;
-		//h = (xr-xs)/2.;
-		//t = creTimeApproximation(h,m,v0,t0[is],m0[is],RNIP[is],BETA[is],false);
-		//tmis += fabs((ts+tr)-t);
+		//raytrace_close(rt);
+		//free(traj);
 
 	} /* Loop over NIP sources */
-
+		raytrace_close(rt);
+		free(traj);
 	/* L2 norm to evaluate the time misfit */
-	//tmis = sqrt(tmis*tmis);
-	tmis = tmis/(10*is);
+	tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
 	return tmis;
 }
 

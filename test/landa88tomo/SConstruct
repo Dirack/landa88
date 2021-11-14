@@ -153,7 +153,7 @@ Plot('mod1gz','mod1',
 Plot('mod1-imggz',['mod1gz','inverted-nipsourcesgz'],'Overlay')
 
 # Plot result: Inverted and original models side by side
-Plot('Fig/invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
+Result('invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
 
 # Nodepoints of the cubic spline velocity function
 Flow('sz_0',None,'math n1=11 d1=1 o1=-2 output="1.0"')
@@ -170,11 +170,11 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.57,1.69,2.0'))
+	'''%('1.60,1.69,2.0'))
 
 # Initial time misfit for inversion
 mis='misfit_1'
-Flow(mis,None,'spike nsp=1 mag=100 k1=1 n1=1')
+Flow(mis,None,'spike nsp=1 mag=0 k1=1 n1=1')
 
 models = []
 misfit = []
@@ -210,7 +210,7 @@ for j in range(nitf):
 		# forward modeling
 		# do a ray-tracing from NIP sources to acquisition surface and measure traveltime
 		Flow([velinv,zspline,vspline,misinv],
-		[model,nipsources,angles,'t0s','m0s','rnips','betas',sz,sv,mis,'multiLayerDataCube'],
+		[model,nipsources,angles,'t0s','m0s','rnips','betas',sz,sv,mis,'interpolatedDataCube2'],
 		    '''
 		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d
 		    ''' % (nit,j))
@@ -249,7 +249,7 @@ Plot('mod1','mod1',
 Plot('mod1-img',['mod1','inverted-nipsources'],'Overlay')
 
 # Plot result: Inverted and original models side by side
-Plot('Fig/inverted-original',['inverted-interfaces','mod1-img'],'SideBySideIso')
+Result('inverted-original',['inverted-interfaces','mod1-img'],'SideBySideIso')
 
 SConscript('SConscript2')
 

@@ -113,13 +113,13 @@ VFSA disturb parameters step.
 
 		if (disturbedZ[i] >= maxz[itf]) {
 
-			disturbedZ[i] = maxz[itf] - (maxz[i]-minz[i]) * getRandomNumberBetween0and1();
+			disturbedZ[i] = maxz[itf] - (maxz[itf]-minz[itf]) * getRandomNumberBetween0and1();
 			
 		}
 
 		if (disturbedZ[i] <= minz[itf]) {
 
-			disturbedZ[i] = (maxz[i]-minz[i]) * getRandomNumberBetween0and1() + minz[itf];
+			disturbedZ[i] = (maxz[itf]-minz[itf]) * getRandomNumberBetween0and1() + minz[itf];
 			
 		}
 	}

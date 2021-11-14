@@ -50,7 +50,7 @@ landa88tomo:	landa88tomo.x GDB1
 
 landa88tomo.x:	$(SRCSTEREO)
 	@echo "Program landa88tomo.x for GDB built"
-	gcc -DGDB_DEBUG -g $(SRCLANDA) -I$$RSFSRC/include -I.. -L$$RSFSRC/lib -o $@ -lrsf -lm
+	gcc -fbounds-check -DGDB_DEBUG -g $(SRCLANDA) -I$$RSFSRC/include -I.. -L$$RSFSRC/lib -o $@ -lrsf -lm
 
 GDB1:
 	@echo "Running GDB script for landa88tomo.x"
