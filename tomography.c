@@ -139,15 +139,15 @@ sum of t=ts+tr.
 	float *x; // Source position (z,x)
 	float *nrnip; // Calculate normal ray rnips
 	float *nbeta; // Calculate normal ray betas
-	float sumAmplitudes;
-	float sumAmplitudes2;
-	float cm0;
-	float ct0;
-	float alpha;
-	int ih;
-	int im;
-	int tetai;
-	int numSamples=0;
+	float sumAmplitudes; // Amplitudes sum
+	float sumAmplitudes2; // Amplitudes sum squared
+	float cm0; // central CMP m0
+	float ct0; // normal ray traveltime t0
+	float alpha; // Asymmetry paramter
+	int ih; // half-offset index
+	int im; // CMP index
+	int tetai; // time index
+	int numSamples=0; // samples counter
 
 	x = sf_floatalloc(2);
 	nrnip = sf_floatalloc(ns);
@@ -222,9 +222,6 @@ sum of t=ts+tr.
 
 			} /* loop over h*/
 
-				//sf_warning("rnip=%f RNIP=%f",nrnip[is-(itf*ns)],RNIP[is-(itf*ns)]);
-			//tmis += sumAmplitudes;
-
 		}else if(it == 0){ // Ray endpoint inside model
 			t = abs(nt)*dt;
 			rayEndpointError(x,p,s,t);
@@ -232,13 +229,11 @@ sum of t=ts+tr.
 			rayEndpointError(x,p,s,t);
 		}
 
-		/* Raytrace close */
-		//raytrace_close(rt);
-		//free(traj);
-
 	} /* Loop over NIP sources */
-		raytrace_close(rt);
-		free(traj);
+
+	raytrace_close(rt);
+	free(traj);
+
 	/* L2 norm to evaluate the time misfit */
 	tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
 	return tmis;
