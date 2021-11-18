@@ -86,7 +86,7 @@ VFSA disturb parameters step.
 				
 	disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-	disturbedVel[itf] = originalVel[itf] + (disturbance*scale*10) * (0.05);
+	disturbedVel[itf] = originalVel[itf] + (disturbance*scale*10) * (0.1);
 
 	if (disturbedVel[itf] >= maxvel[itf]) {
 
@@ -103,6 +103,7 @@ VFSA disturb parameters step.
 	for(i=0;i<nz;i++)
 		disturbedZ[i]=originalZ[i];
 	
+#ifdef CAPA
 	for(i=(itf*nx);i<(itf*nx+nx);i++){
 
 		u=getRandomNumberBetween0and1();
@@ -123,6 +124,7 @@ VFSA disturb parameters step.
 			
 		}
 	}
+#endif
 }
 
 void nonHyperbolicCRSapp(float t[2*mMAX+1][hMAX], float m0, float dm, float om, float dh, float oh, float t0, float v0, float RN, float RNIP, float BETA){

@@ -21,6 +21,7 @@ from rsf.proj import *
 
 # Recipes
 from rsf.recipes.kimodel import multiLayerModel as mlmod
+from rsf.recipes.kimodel import arr2str
 
 ni = int(ARGUMENTS.get('ni',1)) # Number of iterations in inversion loop
 nit = int(ARGUMENTS.get('nit',100)) # Number of iterations in stereoniptomo
@@ -155,13 +156,39 @@ Plot('mod1-imggz',['mod1gz','inverted-nipsourcesgz'],'Overlay')
 # Plot result: Inverted and original models side by side
 Result('invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
 
+layers2 = ((1.0,1.0,1.0,1.2,1.2,1.0,0.9,0.9,1.0,1.0,1.0),
+	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
+
 # Nodepoints of the cubic spline velocity function
-Flow('sz_0',None,'math n1=11 d1=1 o1=-2 output="1.0"')
-Flow('sz_1',None,'math n1=11 d1=1 o1=-2 output="1.8"')
-Flow('sz_2',['sz_0','sz_1'],
+Flow('sz_0.asc',None,
 	'''
-	rcat ${SOURCES[1]} axis=1 |
-	put n2=1 n1=22 d1=1 o2=-2
+	echo %s
+	n1=22 d1=1 o1=-2 n2=1 in=$TARGET data_format=ascii_float
+	'''%(' '.join(map(arr2str,layers2))))
+
+Flow('sz_2','sz_0.asc','dd form=native')
+
+#Flow('sz_1',None,'math n1=11 d1=1 o1=-2 output="1.8"')
+#Flow('sz_2',['sz_0','sz_1'],
+#	'''
+#	rcat ${SOURCES[1]} axis=1 |
+#	put n2=1 n1=22 d1=1 o2=-2
+#	''')
+
+# Generate multi layers model
+mlmod(interfaces='interfaces2',
+        dipsfile='interfacesDip2',
+        modelfile='mod22',
+        xmax=10,
+        zmax=3,
+        layers=layers2,
+        velocities=velocities)
+
+# Plot inverted velocity model with NIP sources
+Plot('mod22',
+	'''
+	put o2=-2 |
+	grey color=j scalebar=y barreverse=y bias=1.508 title="Velocity model" barlabel="Velocity" barunit="Km/s" min2=1 max2=5
 	''')
 
 sv='sv_2'
@@ -170,7 +197,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.60,1.69,2.0'))
+	'''%('1.5,1.6,2.0'))
 
 # Initial time misfit for inversion
 mis='misfit_1'

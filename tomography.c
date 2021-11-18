@@ -200,7 +200,7 @@ sum of t=ts+tr.
 
 			/* CRE trajectory calculation 
 			   Semblance over CRE traveltime curve */
-			for(ih=0; ih < 20; ih++){
+			for(ih=0; ih < 25; ih++){
 
 				h = ih*data_d[1]+data_o[1];
 
