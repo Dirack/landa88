@@ -69,6 +69,63 @@ static void iso_rhs(void* par, float* y, float* f)
     }
 }
 
+float second_derivative(float ppdx, float p, float pmdx, float dx)
+/*< Second derivative >*/
+{
+	return (ppdx-2.*p+pmdx)/(dx*dx);
+}
+
+float qt(float v, float p)
+/*< Second derivative >*/
+{return (v*v*p);}
+
+float pt(float v, float dvdn, float q)
+/*< Second derivative >*/
+{return -1.*(q*dvdn)/v;}
+
+
+
+float calculateRNIPWithDynamicRayTracing(
+					  void *par,
+					  float dt,
+					  float nt,
+					  float **traj,
+					  float v0
+)
+/*< Second derivative >*/
+{
+
+	float q=0.;
+	float p=1.;
+	float v;
+	int it;
+	raytrace rt;
+	float vpdx=1., vmdx=1., dx=0.01;
+	float *x;
+	float dvdn;
+
+    	rt = (raytrace) par;
+	x = sf_floatalloc(2);
+	x[0]=traj[0][0];
+	x[1]=traj[0][1];
+
+	v = grid2_vel(rt->grd2,x);
+	q=v*v*dt;
+	dvdn=second_derivative(vpdx,v,vmdx,dx);
+	p=(-1.*q*dvdn*dt)/v;
+
+	for(it=0;it<nt-2;it++){
+		x[0]=traj[it][0];
+		x[1]=traj[it][1];
+		v = grid2_vel(rt->grd2,x);
+		q=qt(v,p)*dt;
+		dvdn=second_derivative(vpdx,v,vmdx,dx);
+		p=pt(v,dvdn,q)*dt;
+	}
+
+	return v0*(p/q);
+}
+
 static int term(void* par, float* y)
 /* grid termination */
 {
