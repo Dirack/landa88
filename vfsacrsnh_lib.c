@@ -104,7 +104,9 @@ VFSA disturb parameters step.
 		disturbedZ[i]=originalZ[i];
 	
 //#ifdef CAPA
-	for(i=(itf*nx);i<(itf*nx+nx);i++){
+	//for(i=(itf*nx);i<(itf*nx+nx);i++){
+//if(itf==1){
+	for(i=0;i<nx;i++){
 
 		u=getRandomNumberBetween0and1();
 				
@@ -112,15 +114,15 @@ VFSA disturb parameters step.
 
 		disturbedZ[i] = originalZ[i] + (disturbance*scale);
 
-		if (disturbedZ[i] >= maxz[itf]) {
+		if (disturbedZ[i] >= maxz[i/nx]) {
 
-			disturbedZ[i] = maxz[itf] - (maxz[itf]-minz[itf]) * getRandomNumberBetween0and1();
+			disturbedZ[i] = maxz[i/nx] - (maxz[i/nx]-minz[i/nx]) * getRandomNumberBetween0and1();
 			
 		}
 
-		if (disturbedZ[i] <= minz[itf]) {
+		if (disturbedZ[i] <= minz[i/nx]) {
 
-			disturbedZ[i] = (maxz[itf]-minz[itf]) * getRandomNumberBetween0and1() + minz[itf];
+			disturbedZ[i] = (maxz[i/nx]-minz[i/nx]) * getRandomNumberBetween0and1() + minz[i/nx];
 			
 		}
 	}
