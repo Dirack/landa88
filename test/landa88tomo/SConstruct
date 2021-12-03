@@ -26,7 +26,7 @@ from rsf.recipes.kimodel import arr2str
 ni = int(ARGUMENTS.get('ni',1)) # Number of iterations in inversion loop
 nit = int(ARGUMENTS.get('nit',100)) # Number of iterations in stereoniptomo
 nitf = int(ARGUMENTS.get('nitf',1)) # Number of interfaces
-model = 'model_0'
+model = 'model_0' # Constant velocity model
 
 # Fetch dataset
 Fetch(['stackedSection.rsf','parametersCube.rsf','model.jpeg'],
@@ -38,9 +38,9 @@ Fetch(['stackedSection.rsf','parametersCube.rsf','model.jpeg'],
 # Traveltime picking
 Flow('pick.txt','stackedSection','ipick')
 
-# Setup files
+# Setup files - Build RNIP and BETA parameters files
+# for (t0,m0) pairs in 'pick.txt'
 SConscript('SConscript1')
-#SConscript('SConscript3')
 
 # Original velocity model
 xmax = 6.0
@@ -197,11 +197,10 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.5,1.6,2.0'))
+	'''%('1.45,1.6,2.0'))
 
 # Initial time misfit for inversion
-mis='misfit_1'
-Flow(mis,None,'spike nsp=1 mag=0 k1=1 n1=1')
+Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')
 
 models = []
 misfit = []
@@ -210,6 +209,7 @@ for j in range(nitf):
 
 	model = velinv
 	misfit.append('misfit_1')
+	mis='misfit_1'
 
 	for i in range(2,ni+2,1):
 

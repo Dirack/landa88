@@ -175,15 +175,19 @@ sum of t=ts+tr.
 			cm0 = x[1];
 			ct0 = 2*it*dt;
 
-                        /* Escape vector */ 
+                        /* Calculate RNIP */
+			nrnip[is-(itf*ns)]=sqrt((x[0]-s[is-(itf*ns)][0])*(x[0]-s[is-(itf*ns)][0])+(x[1]-s[is-(itf*ns)][1])*(x[1]-s[is-(itf*ns)][1]));
+
+			//sf_warning("rnip=%f RNIP=%f",nrnip[is-(itf*ns)],RNIP[is-(itf*ns)]);
+
+			/* Escape vector */ 
 			i = it >= 2 ? it - 2 : it - 1;
                         x[0]=traj[it][0];
                         x[1]=traj[it][1];
                         x[0]-=traj[i][0];
                         x[1]-=traj[i][1];
 
-			/* Calculate RNIP */
-			nrnip[is-(itf*ns)]=sqrt((x[0]-s[is-(itf*ns)][0])*(x[0]-s[is-(itf*ns)][0])+(x[1]-s[is-(itf*ns)][1])*(x[1]-s[is-(itf*ns)][1]));	
+
 			t = calculateRNIPWithDynamicRayTracing(rt,dt,nt,traj,v0);
 
 			/* Calculate BETA */
@@ -213,8 +217,8 @@ sum of t=ts+tr.
 
 				im = (int) (m/data_d[2]);
 
-				//tetai = (int) ((double) creTimeApproximation(h,m,v0,ct0,cm0,nrnip[is-(itf*ns)],nbeta[is-(itf*ns)],false)/data_d[0]);
-				tetai = (int) ((double) creTimeApproximation(h,m,v0,t0[is-(itf*ns)],m0[is-(itf*ns)],RNIP[is-(itf*ns)],BETA[is-(itf*ns)],false)/data_d[0]);
+				tetai = (int) ((double) creTimeApproximation(h,m,v0,ct0,cm0,nrnip[is-(itf*ns)],nbeta[is-(itf*ns)],false)/data_d[0]);
+				//tetai = (int) ((double) creTimeApproximation(h,m,v0,t0[is-(itf*ns)],m0[is-(itf*ns)],RNIP[is-(itf*ns)],BETA[is-(itf*ns)],true)/data_d[0]);
 
 				sumAmplitudes += data[im][ih][tetai];
 
@@ -237,7 +241,8 @@ sum of t=ts+tr.
 	free(traj);
 
 	/* L2 norm to evaluate the time misfit */
-	tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+	//tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+	tmis = sumAmplitudes;
 	return tmis;
 }
 

@@ -77,7 +77,7 @@ VFSA disturb parameters step.
 	float minz[2]={0.9,1.75};
 	float maxz[2]={1.45,1.9};
 	float minvel[2]={1.45,1.65};
-	float maxvel[2]={1.60,1.85};
+	float maxvel[2]={1.55,1.85};
 
 	for(i=0;i<nv;i++)		
 		disturbedVel[i]=originalVel[i];
@@ -103,7 +103,7 @@ VFSA disturb parameters step.
 	for(i=0;i<nz;i++)
 		disturbedZ[i]=originalZ[i];
 	
-#ifdef CAPA
+//#ifdef CAPA
 	for(i=(itf*nx);i<(itf*nx+nx);i++){
 
 		u=getRandomNumberBetween0and1();
@@ -124,7 +124,7 @@ VFSA disturb parameters step.
 			
 		}
 	}
-#endif
+//#endif
 }
 
 void nonHyperbolicCRSapp(float t[2*mMAX+1][hMAX], float m0, float dm, float om, float dh, float oh, float t0, float v0, float RN, float RNIP, float BETA){

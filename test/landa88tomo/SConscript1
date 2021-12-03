@@ -31,6 +31,12 @@ Flow('m0s.asc','pick.txt',
 
 Flow('m0s','m0s.asc','dd type=float form=native | put n2=1 d2=1 o2=0')
 
+Flow('rns',['parametersCube','t0s','m0s'],
+	'''
+	window n1=1 f1=0 |
+ 	getparameter t0s=${SOURCES[1]} m0s=${SOURCES[2]}
+	''')
+
 Flow('rnips',['parametersCube','t0s','m0s'],
 	'''
 	window n1=1 f1=1 |
