@@ -176,6 +176,7 @@ sum of t=ts+tr.
 			ct0 = 2*it*dt;
 
                         /* Calculate RNIP */
+			//nrnip[is-(itf*ns)] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
 			nrnip[is-(itf*ns)]=sqrt((x[0]-s[is-(itf*ns)][0])*(x[0]-s[is-(itf*ns)][0])+(x[1]-s[is-(itf*ns)][1])*(x[1]-s[is-(itf*ns)][1]));
 
 			//sf_warning("rnip=%f RNIP=%f",nrnip[is-(itf*ns)],RNIP[is-(itf*ns)]);
@@ -186,9 +187,6 @@ sum of t=ts+tr.
                         x[1]=traj[it][1];
                         x[0]-=traj[i][0];
                         x[1]-=traj[i][1];
-
-
-			t = calculateRNIPWithDynamicRayTracing(rt,dt,nt,traj,v0);
 
 			/* Calculate BETA */
 			/* Dot product with unit vector pointing upward */

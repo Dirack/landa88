@@ -69,10 +69,32 @@ static void iso_rhs(void* par, float* y, float* f)
     }
 }
 
-float second_derivative(float ppdx, float p, float pmdx, float dx)
+float second_derivative(void *par, float *n, float *x, float v)
 /*< Second derivative >*/
 {
-	return (ppdx-2.*p+pmdx)/(dx*dx);
+	raytrace rt;
+	float vpdx, vmdx;
+	float dx=0.01;
+	float *tmp;
+
+	tmp = sf_floatalloc(2);
+
+	rt = (raytrace) par;
+
+	n[0]*=dx;
+	n[1]*=dx;
+
+	// ppdx
+	tmp[0] = x[0]+n[1];
+	tmp[1] = x[1]-n[0];
+	vpdx = sqrtf(1./grid2_vel(rt->grd2,tmp));
+
+	// pmdx
+	tmp[0]=x[0]-n[1];
+	tmp[1]=x[1]+n[0];
+	vmdx = sqrtf(1./grid2_vel(rt->grd2,tmp));
+
+	return (vpdx-2.*v+vmdx)/(dx*dx);
 }
 
 float qt(float v, float p)
@@ -102,28 +124,47 @@ float calculateRNIPWithDynamicRayTracing(
 	raytrace rt;
 	float vpdx=1., vmdx=1., dx=0.01;
 	float *x;
+	float *n;
 	float dvdn;
+	float mod;
+	float rnip;
 
     	rt = (raytrace) par;
 	x = sf_floatalloc(2);
+	n = sf_floatalloc(2);
 	x[0]=traj[0][0];
 	x[1]=traj[0][1];
+	n[0] = (traj[1][0]-traj[0][0]);
+	n[1] = (traj[1][1]-traj[0][1]);
+	mod = sqrtf(n[0]*n[0]+n[1]*n[1]);
+	n[0] /= mod;
+	n[1] /= mod;
 
-	v = grid2_vel(rt->grd2,x);
+	v = sqrtf(1./grid2_vel(rt->grd2,x));
 	q=v*v*dt;
-	dvdn=second_derivative(vpdx,v,vmdx,dx);
+	dvdn=second_derivative(rt,n,x,v);
 	p=(-1.*q*dvdn*dt)/v;
 
 	for(it=0;it<nt-2;it++){
+		//sf_warning("it=%d q=%f p=%f",it,q,p);
 		x[0]=traj[it][0];
 		x[1]=traj[it][1];
-		v = grid2_vel(rt->grd2,x);
-		q=qt(v,p)*dt;
-		dvdn=second_derivative(vpdx,v,vmdx,dx);
-		p=pt(v,dvdn,q)*dt;
+		n[0] = (traj[it+1][0]-traj[it][0]);
+		n[1] = (traj[it+1][1]-traj[it][1]);
+		mod = sqrtf(n[0]*n[0]+n[1]*n[1]);
+		n[0] /= mod;
+		n[1] /= mod;
+
+		v = sqrtf(1./grid2_vel(rt->grd2,x));
+		q+=qt(v,p)*dt;
+		dvdn=second_derivative(rt,n,x,v);
+		p+=pt(v,dvdn,q)*dt;
 	}
 
-	return v0*(p/q);
+	rnip = v0*(p/q);
+	rnip = 1./rnip;
+
+	return rnip;
 }
 
 static int term(void* par, float* y)
