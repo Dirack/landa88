@@ -22,6 +22,7 @@
 #include "raytrace.h"
 #include "grid2.h"
 #include "atela.h"
+#include "dynamic.h"
 
 #ifndef _raytrace_h
 
@@ -43,30 +44,20 @@ struct RayTrace {
 };
 /* concrete data type */
 
-static void iso_rhs(void* par, float* y, float* f)
+static void iso_rhs(void* par, float* y, float* f){}
+
+static void dyn_iso_rhs(void* par, float dvdn, float *x, float* y, float* f)
 /* right-hand side for isotropic raytracing */
 {    
-    raytrace rt;
-    int i, dim;
-    float s2, sds[3];
+	raytrace rt;
+	float v;
 	
-    rt = (raytrace) par;
-    dim = rt->dim;
+	rt = (raytrace) par;
+
+	v = sqrtf(1./grid2_vel(rt->grd2,x));
 	
-    switch (dim) {
-		case 2:
-			s2 = grid2_vel(rt->grd2,y);
-			grid2_vgrad(rt->grd2,y,sds);
-			break;
-		default:
-			s2 = 0.;
-			sf_error("%s: Cannot raytrace with dim=%d",__FILE__,dim);
-    }
-	
-    for (i=0; i < dim; i++) {
-		f[i]   = y[i+dim]/s2; /* p/s^2 */
-		f[i+dim] = sds[i]/s2; /* 1/2 grad(s^2)/s^2 */
-    }
+	f[0]   = v*v*y[1]; /* v^2 p */
+	f[1] = (-1./v)*dvdn*y[0]; /* -1/v dv/dn q */
 }
 
 float second_derivative(void *par, float *n, float *x, float v)
@@ -97,16 +88,6 @@ float second_derivative(void *par, float *n, float *x, float v)
 	return (vpdx-2.*v+vmdx)/(dx*dx);
 }
 
-float qt(float v, float p)
-/*< Second derivative >*/
-{return (v*v*p);}
-
-float pt(float v, float dvdn, float q)
-/*< Second derivative >*/
-{return -1.*(q*dvdn)/v;}
-
-
-
 float calculateRNIPWithDynamicRayTracing(
 					  void *par,
 					  float dt,
@@ -122,31 +103,18 @@ float calculateRNIPWithDynamicRayTracing(
 	float v;
 	int it;
 	raytrace rt;
-	float vpdx=1., vmdx=1., dx=0.01;
 	float *x;
 	float *n;
-	float dvdn;
+	float *dvdn;
 	float mod;
 	float rnip;
 
     	rt = (raytrace) par;
 	x = sf_floatalloc(2);
 	n = sf_floatalloc(2);
-	x[0]=traj[0][0];
-	x[1]=traj[0][1];
-	n[0] = (traj[1][0]-traj[0][0]);
-	n[1] = (traj[1][1]-traj[0][1]);
-	mod = sqrtf(n[0]*n[0]+n[1]*n[1]);
-	n[0] /= mod;
-	n[1] /= mod;
-
-	v = sqrtf(1./grid2_vel(rt->grd2,x));
-	q=v*v*dt;
-	dvdn=second_derivative(rt,n,x,v);
-	p=(-1.*q*dvdn*dt)/v;
+	dvdn = sf_floatalloc(nt-2);
 
 	for(it=0;it<nt-2;it++){
-		//sf_warning("it=%d q=%f p=%f",it,q,p);
 		x[0]=traj[it][0];
 		x[1]=traj[it][1];
 		n[0] = (traj[it+1][0]-traj[it][0]);
@@ -156,13 +124,14 @@ float calculateRNIPWithDynamicRayTracing(
 		n[1] /= mod;
 
 		v = sqrtf(1./grid2_vel(rt->grd2,x));
-		q+=qt(v,p)*dt;
-		dvdn=second_derivative(rt,n,x,v);
-		p+=pt(v,dvdn,q)*dt;
+		dvdn[it]=second_derivative(rt,n,x,v);
 	}
 
-	rnip = v0*(p/q);
-	rnip = 1./rnip;
+	x[0]=0.; // q=0
+	x[1]=1.; // p=1
+	sf_dynamic_runge_init(2,nt-2,2*dt);
+	rnip = sf_dynamic_runge_step(x,rt,dyn_iso_rhs,dvdn,traj);
+	sf_dynamic_runge_close();
 
 	return rnip;
 }

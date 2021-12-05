@@ -176,8 +176,8 @@ sum of t=ts+tr.
 			ct0 = 2*it*dt;
 
                         /* Calculate RNIP */
-			//nrnip[is-(itf*ns)] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
-			nrnip[is-(itf*ns)]=sqrt((x[0]-s[is-(itf*ns)][0])*(x[0]-s[is-(itf*ns)][0])+(x[1]-s[is-(itf*ns)][1])*(x[1]-s[is-(itf*ns)][1]));
+			nrnip[is-(itf*ns)] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
+			//nrnip[is-(itf*ns)]=sqrt((x[0]-s[is-(itf*ns)][0])*(x[0]-s[is-(itf*ns)][0])+(x[1]-s[is-(itf*ns)][1])*(x[1]-s[is-(itf*ns)][1]));
 
 			//sf_warning("rnip=%f RNIP=%f",nrnip[is-(itf*ns)],RNIP[is-(itf*ns)]);
 
@@ -216,12 +216,16 @@ sum of t=ts+tr.
 				im = (int) (m/data_d[2]);
 
 				tetai = (int) ((double) creTimeApproximation(h,m,v0,ct0,cm0,nrnip[is-(itf*ns)],nbeta[is-(itf*ns)],false)/data_d[0]);
+				//sf_warning("tetai=%d rnip=%f",tetai,nrnip[is-(itf*ns)]);
 				//tetai = (int) ((double) creTimeApproximation(h,m,v0,t0[is-(itf*ns)],m0[is-(itf*ns)],RNIP[is-(itf*ns)],BETA[is-(itf*ns)],true)/data_d[0]);
 
-				sumAmplitudes += data[im][ih][tetai];
+				if(tetai > data_n[0] || tetai < 0){
+					sumAmplitudes += 0.;
+				}else{
+					sumAmplitudes += data[im][ih][tetai];
+				}
 
 				sumAmplitudes2 += (sumAmplitudes*sumAmplitudes);
-
 				numSamples++;
 
 			} /* loop over h*/
