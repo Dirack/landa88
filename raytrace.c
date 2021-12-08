@@ -65,7 +65,7 @@ float second_derivative(void *par, float *n, float *x, float v)
 {
 	raytrace rt;
 	float vpdx, vmdx;
-	float dx=0.01;
+	float dx=0.001;
 	float *tmp;
 
 	tmp = sf_floatalloc(2);
@@ -98,8 +98,6 @@ float calculateRNIPWithDynamicRayTracing(
 /*< Second derivative >*/
 {
 
-	float q=0.;
-	float p=1.;
 	float v;
 	int it;
 	raytrace rt;

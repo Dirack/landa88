@@ -40,46 +40,47 @@ float sf_dynamic_runge_step (float* y    /* [dim] solution */,
   Note:
   >*/
 {
-    int it, i;
+	int it, i;
 	float *x;
 	float rnip;
 
 	x = sf_floatalloc(2);
  
-    for (it = 0; it < nt; it++) {
+	for (it = 0; it < nt; it++) {
 
-	x[0]=traj[it][0];
-	x[1]=traj[it][1];
-	rhs (par, dvdn[it],x, y, k[0]); 
+		x[0]=traj[it][0];
+		x[1]=traj[it][1];
+		rhs (par, dvdn[it],x, y, k[0]); 
 
-	for (i=0; i < dim; i++) {
-	    yk[i] = y[i] + 0.5*dt*k[0][i];
-	}
+		for (i=0; i < dim; i++) {
+			yk[i] = y[i] + 0.5*dt*k[0][i];
+		}
       
-	x[0]=traj[it+1][0];
-	x[1]=traj[it+1][1];
-	rhs (par, dvdn[it+1],x,yk, k[1]); 
+		x[0]=traj[it+1][0];
+		x[1]=traj[it+1][1];
+		rhs (par, dvdn[it+1],x,yk, k[1]); 
 
-	for (i=0; i < dim; i++) {
-	    yk[i] = y[i] + 0.5*dt*k[1][i];
-	}
+		for (i=0; i < dim; i++) {
+			yk[i] = y[i] + 0.5*dt*k[1][i];
+		}
       
-	x[0]=traj[it+1][0];
-	x[1]=traj[it+1][1];
-	rhs (par, dvdn[it+1],x,yk, k[2]); 
-	for (i=0; i < dim; i++) {
-	    yk[i] = y[i] + dt*k[2][i];
-	}
+		x[0]=traj[it+1][0];
+		x[1]=traj[it+1][1];
+		rhs (par, dvdn[it+1],x,yk, k[2]); 
 
-	x[0]=traj[it+2][0];
-	x[1]=traj[it+2][1];
-	rhs (par, dvdn[it+2],x,yk, k[3]); 
+		for (i=0; i < dim; i++) {
+			yk[i] = y[i] + dt*k[2][i];
+		}
 
-	for (i=0; i < dim; i++) {
-	    y[i] += dt*(k[0][i]+2.*k[1][i]+2.*k[2][i]+k[3][i])/6.0;
-	}
+		x[0]=traj[it+2][0];
+		x[1]=traj[it+2][1];
+		rhs (par, dvdn[it+2],x,yk, k[3]); 
+
+		for (i=0; i < dim; i++) {
+			y[i] += dt*(k[0][i]+2.*k[1][i]+2.*k[2][i]+k[3][i])/6.0;
+		}
 	
-    }
+	}
   
 	rnip = 1.5*(y[1]/y[0]);
 	rnip =  1./rnip;
