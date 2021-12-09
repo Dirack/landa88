@@ -174,17 +174,18 @@ sum of t=ts+tr.
 
 			cm0 = x[1];
 			ct0 = 2*it*dt;
+                        x[0]=traj[it][0];
+                        x[1]=traj[it][1];
 
                         /* Calculate RNIP */
+			//nrnip[is-(itf*ns)] = v0*ct0;
 			nrnip[is-(itf*ns)] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
 			//nrnip[is-(itf*ns)]=sqrt((x[0]-s[is-(itf*ns)][0])*(x[0]-s[is-(itf*ns)][0])+(x[1]-s[is-(itf*ns)][1])*(x[1]-s[is-(itf*ns)][1]));
 
-			//sf_warning("rnip=%f RNIP=%f",nrnip[is-(itf*ns)],RNIP[is-(itf*ns)]);
+			sf_warning("rnipc=%f RNIP=%f",v0*ct0,nrnip[is-(itf*ns)]);
 
 			/* Escape vector */ 
 			i = it >= 2 ? it - 2 : it - 1;
-                        x[0]=traj[it][0];
-                        x[1]=traj[it][1];
                         x[0]-=traj[i][0];
                         x[1]-=traj[i][1];
 

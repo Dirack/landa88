@@ -100,6 +100,8 @@ VFSA disturb parameters step.
 			
 	}
 
+	disturbedVel[itf+1]=disturbedVel[itf];
+
 	for(i=0;i<nz;i++)
 		disturbedZ[i]=originalZ[i];
 	

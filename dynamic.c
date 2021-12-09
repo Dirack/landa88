@@ -35,7 +35,8 @@ float sf_dynamic_runge_step (float* y    /* [dim] solution */,
 		   	   void (*rhs)(void*,float,float*,float*,float*) 
 		   	   /* RHS function */, 
 			   float *dvdn,
-		   	   float** traj /* [nt+1][dim] - ray trajectory (output) */) 
+		   	   float** traj, /* [nt+1][dim] - ray trajectory (output) */
+			   float v0) 
 /*< ODE solver for dy/dt = f where f comes from rhs(par,y,f)
   Note:
   >*/
@@ -82,7 +83,7 @@ float sf_dynamic_runge_step (float* y    /* [dim] solution */,
 	
 	}
   
-	rnip = 1.5*(y[1]/y[0]);
+	rnip = v0*(y[1]/y[0]);
 	rnip =  1./rnip;
 	return rnip;
 }

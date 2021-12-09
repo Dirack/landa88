@@ -56,6 +56,7 @@ static void dyn_iso_rhs(void* par, float dvdn, float *x, float* y, float* f)
 
 	v = sqrtf(1./grid2_vel(rt->grd2,x));
 	
+	//dvdn = 0.;
 	f[0]   = v*v*y[1]; /* v^2 p */
 	f[1] = (-1./v)*dvdn*y[0]; /* -1/v dv/dn q */
 }
@@ -122,13 +123,14 @@ float calculateRNIPWithDynamicRayTracing(
 		n[1] /= mod;
 
 		v = sqrtf(1./grid2_vel(rt->grd2,x));
+		//dvdn[it]=v;
 		dvdn[it]=second_derivative(rt,n,x,v);
 	}
 
 	x[0]=0.; // q=0
 	x[1]=1.; // p=1
 	sf_dynamic_runge_init(2,nt-2,2*dt);
-	rnip = sf_dynamic_runge_step(x,rt,dyn_iso_rhs,dvdn,traj);
+	rnip = sf_dynamic_runge_step(x,rt,dyn_iso_rhs,dvdn,traj,v0);
 	sf_dynamic_runge_close();
 
 	return rnip;
