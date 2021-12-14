@@ -105,9 +105,6 @@ VFSA disturb parameters step.
 	for(i=0;i<nz;i++)
 		disturbedZ[i]=originalZ[i];
 	
-//#ifdef CAPA
-	//for(i=(itf*nx);i<(itf*nx+nx);i++){
-//if(itf==1){
 	for(i=0;i<nx;i++){
 
 		u=getRandomNumberBetween0and1();
@@ -128,7 +125,6 @@ VFSA disturb parameters step.
 			
 		}
 	}
-//#endif
 }
 
 void nonHyperbolicCRSapp(float t[2*mMAX+1][hMAX], float m0, float dm, float om, float dh, float oh, float t0, float v0, float RN, float RNIP, float BETA){

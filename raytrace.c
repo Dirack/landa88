@@ -18,7 +18,6 @@
  */
 
 #include <rsf.h>
-
 #include "raytrace.h"
 #include "grid2.h"
 #include "atela.h"
@@ -56,7 +55,6 @@ static void dyn_iso_rhs(void* par, float dvdn, float *x, float* y, float* f)
 
 	v = sqrtf(1./grid2_vel(rt->grd2,x));
 	
-	//dvdn = 0.;
 	f[0]   = v*v*y[1]; /* v^2 p */
 	f[1] = (-1./v)*dvdn*y[0]; /* -1/v dv/dn q */
 }
@@ -123,7 +121,6 @@ float calculateRNIPWithDynamicRayTracing(
 		n[1] /= mod;
 
 		v = sqrtf(1./grid2_vel(rt->grd2,x));
-		//dvdn[it]=v;
 		dvdn[it]=second_derivative(rt,n,x,v);
 	}
 
@@ -132,6 +129,93 @@ float calculateRNIPWithDynamicRayTracing(
 	sf_dynamic_runge_init(2,nt-2,2*dt);
 	rnip = sf_dynamic_runge_step(x,rt,dyn_iso_rhs,dvdn,traj,v0);
 	sf_dynamic_runge_close();
+
+	return rnip;
+}
+
+void transmitedRNIPThroughInterface(
+					void *par, /* Raytrace struct */
+					int *i, /* ray sample index */
+					float **traj, /* ray trajectory */
+					float *rnip, /* RNIP parameter */
+					float dt /* ray time sampling */)
+/*< Calculate transmited RNIP parameter through interface using Hubral laws
+Note:
+>*/
+{
+	float vi, vt=0.;
+	float *x;
+	raytrace rt;
+
+	rt = (raytrace) par;
+
+	x=sf_floatalloc(2);
+
+	x[0]=traj[*i][0];
+	x[1]=traj[*i][1];
+	vi = sqrtf(1./grid2_vel(rt->grd2,x));
+	*i=*i+1;
+
+	x[0] = traj[*i][0];
+	x[1] = traj[*i][1];
+	vt = sqrtf(1./grid2_vel(rt->grd2,x));
+	
+	while(vi!=vt){
+		*rnip+=2*vt*dt;
+
+		vi = vt;
+
+		*i=*i+1;
+		x[0] = traj[*i][0];
+		x[1] = traj[*i][1];
+		vt = sqrtf(1./grid2_vel(rt->grd2,x));
+	}
+
+}
+
+float calculateRNIPWithHubralLaws(
+				  void *par, /* Raytrace struct */
+				  float** traj, /* Normal ray trajectory */
+				  int nt, /* Normal ray times samples */
+				  float *v, /* layers velocities */
+				  float t0, /* Normal ray traveltime */
+				  int itf /* Interface index */)
+/*< Calculate RNIP parameter using Hubral's transmission and propagation laws
+
+Note: 
+>*/
+{
+
+	int i; // loop counter
+	float rnip=0.; // RNIP parameter
+	raytrace rt; // raytrace struct
+	float vt, vi; // velocities
+	float *x; // (z,x) position vector
+
+	rt = (raytrace) par;
+	x = sf_floatalloc(2);
+
+	x[0] = traj[0][0];
+	x[1] = traj[0][1];
+	vi = sqrtf(1./grid2_vel(rt->grd2,x));
+	vt = vi;
+	rnip+=2*vt*rt->dt;
+
+	for(i=1;i<nt;i++){
+		x[0] = traj[i][0];
+		x[1] = traj[i][1];
+		vt = sqrtf(1./grid2_vel(rt->grd2,x));
+
+		/* If the ray reaches interface use transmission law */
+		if(vt!=vi){
+			//sf_warning("(%d) vi=%f vt=%f",i,vi,vt);
+			transmitedRNIPThroughInterface(rt,&i,traj,&rnip,rt->dt);
+			vi=vt;
+		}
+
+		/* Propagation law */
+		rnip+=2*vt*rt->dt;
+	}
 
 	return rnip;
 }

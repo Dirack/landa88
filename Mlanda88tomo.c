@@ -270,8 +270,6 @@ int main(int argc, char* argv[])
 		/* Calculate time misfit through forward modeling */		
 		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf,data,data_n,data_o,data_d);
 
-		//tmis+=calculateLocationMisfit(s,cnewz,nsz/(nsv-1),osz,dsz,nshot,itf);
-
 		if(fabs(tmis) > fabs(tmis0) ){
 			otmis = fabs(tmis);
 			/* optimized parameters */

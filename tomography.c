@@ -96,10 +96,10 @@ float calculateTimeMisfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   float *a, /* Normal ray angle for each NIP source (degrees) */
 			   int ns, /* Number of NIP sources */
 			   int itf, /* Interface being inverted */
-			   float ***data,
-			   int *data_n,
-			   float *data_o,
-			   float *data_d)
+			   float ***data, /* Seismic data cube A(m,h,t) */
+			   int *data_n, /* Data number of samples */
+			   float *data_o, /* Data axis origin */
+			   float *data_d /* Data sampling */)
 /*< Return L2 norm of the time misfit: The time misfit is the difference
 between the traveltime calculated using raytracing and the traveltime calculated
 with the CRE traveltime formula 
@@ -132,15 +132,11 @@ sum of t=ts+tr.
 	float m; // CMP
 	float h; // half-offset
 	float tmis=0; // time misfit
-	float xs=0.; // Source position
-	float xr=0.; // Receiver position
-	float tr=0.; // NIP to receiver ray traveltime
-	float ts=0.; // NIP to source ray traveltime
 	float *x; // Source position (z,x)
 	float *nrnip; // Calculate normal ray rnips
 	float *nbeta; // Calculate normal ray betas
-	float sumAmplitudes; // Amplitudes sum
-	float sumAmplitudes2; // Amplitudes sum squared
+	float sumAmplitudes=0.; // Amplitudes sum
+	float sumAmplitudes2=0.; // Amplitudes sum squared
 	float cm0; // central CMP m0
 	float ct0; // normal ray traveltime t0
 	float alpha; // Asymmetry paramter
@@ -148,6 +144,10 @@ sum of t=ts+tr.
 	int im; // CMP index
 	int tetai; // time index
 	int numSamples=0; // samples counter
+	float *vv;
+
+	vv = sf_floatalloc(3);
+	vv[0]=1.5; vv[1]=1.7; vv[2]=2.0;
 
 	x = sf_floatalloc(2);
 	nrnip = sf_floatalloc(ns);
@@ -178,11 +178,10 @@ sum of t=ts+tr.
                         x[1]=traj[it][1];
 
                         /* Calculate RNIP */
-			//nrnip[is-(itf*ns)] = v0*ct0;
-			nrnip[is-(itf*ns)] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
-			//nrnip[is-(itf*ns)]=sqrt((x[0]-s[is-(itf*ns)][0])*(x[0]-s[is-(itf*ns)][0])+(x[1]-s[is-(itf*ns)][1])*(x[1]-s[is-(itf*ns)][1]));
+			nrnip[is-(itf*ns)] = calculateRNIPWithHubralLaws(rt,traj,it,vv,ct0,itf);
+			//nrnip[is-(itf*ns)] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
 
-			sf_warning("rnipc=%f RNIP=%f",v0*ct0,nrnip[is-(itf*ns)]);
+			if(nrnip[is-(itf*ns)]<0.0) sf_warning("rnipc=%f RNIP=%f",v0*ct0,nrnip[is-(itf*ns)]);
 
 			/* Escape vector */ 
 			i = it >= 2 ? it - 2 : it - 1;
@@ -217,8 +216,6 @@ sum of t=ts+tr.
 				im = (int) (m/data_d[2]);
 
 				tetai = (int) ((double) creTimeApproximation(h,m,v0,ct0,cm0,nrnip[is-(itf*ns)],nbeta[is-(itf*ns)],false)/data_d[0]);
-				//sf_warning("tetai=%d rnip=%f",tetai,nrnip[is-(itf*ns)]);
-				//tetai = (int) ((double) creTimeApproximation(h,m,v0,t0[is-(itf*ns)],m0[is-(itf*ns)],RNIP[is-(itf*ns)],BETA[is-(itf*ns)],true)/data_d[0]);
 
 				if(tetai > data_n[0] || tetai < 0){
 					sumAmplitudes += 0.;
@@ -244,6 +241,7 @@ sum of t=ts+tr.
 	free(traj);
 
 	/* L2 norm to evaluate the time misfit */
+	// TODO: Choose the best object function criteria
 	//tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
 	tmis = sumAmplitudes;
 	return tmis;
