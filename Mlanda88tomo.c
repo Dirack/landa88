@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
 		tmis=0;
 	
 		/* Calculate time misfit through forward modeling */		
-		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf,data,data_n,data_o,data_d);
+		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz);
 
 		if(fabs(tmis) > fabs(tmis0) ){
 			otmis = fabs(tmis);

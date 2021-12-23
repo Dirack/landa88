@@ -99,7 +99,11 @@ float calculateTimeMisfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   float ***data, /* Seismic data cube A(m,h,t) */
 			   int *data_n, /* Data number of samples */
 			   float *data_o, /* Data axis origin */
-			   float *data_d /* Data sampling */)
+			   float *data_d, /* Data sampling */
+			   float *sz,
+			   int nsz,
+			   float osz,
+			   float dsz)
 /*< Return L2 norm of the time misfit: The time misfit is the difference
 between the traveltime calculated using raytracing and the traveltime calculated
 with the CRE traveltime formula 
@@ -178,7 +182,7 @@ sum of t=ts+tr.
                         x[1]=traj[it][1];
 
                         /* Calculate RNIP */
-			nrnip[is-(itf*ns)] = calculateRNIPWithHubralLaws(rt,traj,it,vv,ct0,itf);
+			nrnip[is-(itf*ns)] = calculateRNIPWithHubralLaws(rt,traj,it,vv,ct0,itf,sz,nsz,osz,dsz,ns);
 			//nrnip[is-(itf*ns)] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
 
 			if(nrnip[is-(itf*ns)]<0.0) sf_warning("rnipc=%f RNIP=%f",v0*ct0,nrnip[is-(itf*ns)]);

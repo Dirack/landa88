@@ -22,6 +22,7 @@
 #include "grid2.h"
 #include "atela.h"
 #include "dynamic.h"
+#include "cubicsplineint.h"
 
 #ifndef _raytrace_h
 
@@ -44,6 +45,26 @@ struct RayTrace {
 /* concrete data type */
 
 static void iso_rhs(void* par, float* y, float* f){}
+
+float getvelocity(void *par, float **traj, int i)
+/* Get velocity from a point in the ray trajectory
+Note: The i variable is the sample index of the ray trajectory traj. This
+function returns the velocity from the grid in the sample location
+(z,x)=(traj[i][0],traj[i][1]).
+*/
+{
+	raytrace rt;
+	float *x;
+
+	rt = (raytrace) par;
+
+	x=sf_floatalloc(2);
+
+	x[0]=traj[i][0];
+	x[1]=traj[i][1];
+	
+	return sqrtf(1./grid2_vel(rt->grd2,x));
+}
 
 static void dyn_iso_rhs(void* par, float dvdn, float *x, float* y, float* f)
 /* right-hand side for isotropic raytracing */
@@ -135,40 +156,50 @@ float calculateRNIPWithDynamicRayTracing(
 
 void transmitedRNIPThroughInterface(
 					void *par, /* Raytrace struct */
-					int *i, /* ray sample index */
+					int *ir, /* ray sample index */
 					float **traj, /* ray trajectory */
 					float *rnip, /* RNIP parameter */
-					float dt /* ray time sampling */)
+					float *sz,
+					int nsz,
+					float osz,
+					float dsz,
+					int itf,
+					int nx)
 /*< Calculate transmited RNIP parameter through interface using Hubral laws
 Note:
 >*/
 {
 	float vi, vt=0.;
-	float *x;
 	raytrace rt;
+	float *x;
+	float **coef;
+	float* szz; // Z coordinates of interface being inverted
+	int i;
+
+        x = sf_floatalloc(nx);
+        szz = sf_floatalloc(nx);
+
+        for(i=0;i<nx;i++){
+                x[i] = i*dsz+osz;
+                szz[i]=sz[i+(itf*nsz)];
+        }
+
+        /* Calculate coefficients matrix (interfaces interpolation) */
+        coef = sf_floatalloc2(4*(nx-1),1);
+        calculateSplineCoeficients(nx,x,szz,coef,1);
 
 	rt = (raytrace) par;
 
-	x=sf_floatalloc(2);
+	vi = getvelocity(rt,traj,*ir);
 
-	x[0]=traj[*i][0];
-	x[1]=traj[*i][1];
-	vi = sqrtf(1./grid2_vel(rt->grd2,x));
-	*i=*i+1;
-
-	x[0] = traj[*i][0];
-	x[1] = traj[*i][1];
-	vt = sqrtf(1./grid2_vel(rt->grd2,x));
+	vt = getvelocity(rt,traj,(*ir)++);
 	
 	while(vi!=vt){
-		*rnip+=2*vt*dt;
+		*rnip+=2*vt*rt->dt;
 
 		vi = vt;
 
-		*i=*i+1;
-		x[0] = traj[*i][0];
-		x[1] = traj[*i][1];
-		vt = sqrtf(1./grid2_vel(rt->grd2,x));
+		vt = getvelocity(rt,traj,(*ir)++);
 	}
 
 }
@@ -179,7 +210,12 @@ float calculateRNIPWithHubralLaws(
 				  int nt, /* Normal ray times samples */
 				  float *v, /* layers velocities */
 				  float t0, /* Normal ray traveltime */
-				  int itf /* Interface index */)
+				  int itf, /* Interface index */
+				  float *sz,
+				  int nsz,
+				  float osz,
+				  float dsz,
+				  int nx)
 /*< Calculate RNIP parameter using Hubral's transmission and propagation laws
 
 Note: 
@@ -209,7 +245,7 @@ Note:
 		/* If the ray reaches interface use transmission law */
 		if(vt!=vi){
 			//sf_warning("(%d) vi=%f vt=%f",i,vi,vt);
-			transmitedRNIPThroughInterface(rt,&i,traj,&rnip,rt->dt);
+			transmitedRNIPThroughInterface(rt,&i,traj,&rnip,sz,nsz,osz,dsz,itf,nx);
 			vi=vt;
 		}
 
