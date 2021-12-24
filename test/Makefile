@@ -45,6 +45,12 @@ setup1:	landa88tomo/pick.txt landa88tomo/parametersCube.asc
 	@echo "Setup input files for test..."
 	cd landa88tomo && scons -f SConscript1 $(PARAM) && scons model_0.rsf && scons sz.rsf && scons ns=$(shell wc -l landa88tomo/pick.txt | cut -d" " -f1) ni=1 nipsources_1.rsf angles_1.rsf gz_1.rsf
 
+#
+testeitf:	testeitf.x
+
+testeitf.x:	../Mtesteitf.c ../interface2d.c ../cubicsplineint.c
+	gcc -g $^ -I$$RSFSRC/include -I.. -L$$RSFSRC/lib -o $@ -lrsf
+
 # Version of the landa88tomo program for GDB (GNU debugger)
 landa88tomo:	landa88tomo.x GDB1
 
