@@ -6,6 +6,7 @@ int main(int argc, char* argv[]){
 	itf2d itf;
 	float *sz;
 	int i;
+	float f;
 
 	sz = sf_floatalloc(11);
 
@@ -14,4 +15,5 @@ int main(int argc, char* argv[]){
 	
 	itf = itf2d_init(sz,11,-2.0,1.0);
 
+	f = getZCoordinateOfInterface(itf,1.5);	
 }

@@ -46,3 +46,21 @@ itf2d itf2d_init(float *sz,
 
 	return itf;
 }
+
+float getZCoordinateOfInterface(
+				itf2d itf,
+				float x)
+/*< TODO >*/
+{
+	float z;
+	int is;
+	float xs;
+
+	is = (x-itf->o)/itf->d;
+
+	xs = x - ((is*itf->d)+itf->o);
+
+	z = itf->coef[is*4+0]*xs*xs*xs+itf->coef[is*4+1]*xs*xs+itf->coef[is*4+2]*xs+itf->coef[is*4+3];
+
+	return z;
+}
