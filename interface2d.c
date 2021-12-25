@@ -96,7 +96,7 @@ float itf2d_d(itf2d itf)
 /*< Get interface nodepoints sampling >*/
 {return itf->d;}
 
-void itf2d_setz(
+void itf2d_setZNodepoints(
 		itf2d itf, /* Interface */
 		float *z /* Nodepoints z(x) */)
 /*< Update interface nodepoints z(x) >*/
@@ -104,4 +104,14 @@ void itf2d_setz(
 	int i;
 	for(i=0;i<itf->n;i++)
 		itf->z[i]=z[i];
+}
+
+void itf2d_getZNodepoints(
+		itf2d itf, /* Interface */
+		float *z /* Nodepoints z(x) */)
+/*< Get interface nodepoints z(x) >*/
+{
+	int i;
+	for(i=0;i<itf->n;i++)
+		z[i]=itf->z[i];
 }
