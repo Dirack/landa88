@@ -22,7 +22,7 @@
 #include "grid2.h"
 #include "atela.h"
 #include "dynamic.h"
-#include "cubicsplineint.h"
+#include "interface2d.h"
 
 #ifndef _raytrace_h
 

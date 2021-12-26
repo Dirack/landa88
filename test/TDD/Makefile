@@ -15,7 +15,7 @@
 all:	test_interface2d.x
 	./$< && rm $<
 
-%.x:	%.c ../../interface2d.c ../../cubicsplineint.c Unity/unity.c
+%.x:	%.c ../../interface2d.c Unity/unity.c
 	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf
 
 clean:

@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <rsf.h>
-#include "cubicsplineint.h"
+#include "interface2d.h"
 #include "velocity_lib.h"
 
 float calculateLocationMisfit( float **s, /* NIP sources location */

@@ -12,7 +12,7 @@
 # 
 # License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
-DEP= ../raytrace.c ../grid2.c ../atela.c ../dynamic.c ../cubicsplineint.c
+DEP= ../raytrace.c ../grid2.c ../atela.c ../dynamic.c ../interface2d.c
 SRCLANDA = ../Mlanda88tomo.c ../tomography.c ../velocity_lib.c $(DEP) ../vfsacrsnh_lib.c
 
 # model files: Stacked section and parameters cube from CRE stack
