@@ -89,6 +89,27 @@ void test_interfaceInterpolation(){
 	TEST_ASSERT_FLOAT_WITHIN(0.01,3.1,getZCoordinateOfInterface(s0,6.7));
 }
 
+void test_cubicSplineCoefficientsCalculation(){
+/*< Test cubic spline coefficients calculation function >*/
+
+	float x[5]={1.0,2.0,4.0,6.0,7.0};
+	float z[5]={2.0,4.0,1.0,3.0,3.0};
+	float ss[4][4] = {{-0.783,0.,2.783,2.},{0.692,-2.35,0.433,4},{-0.483,1.8,-0.666,1.},{0.366,-1.1,0.733,3.}};
+	float **coef;
+	int n=5;
+	int i, j;
+
+	coef = sf_floatalloc2(4*(n-1),1);
+	calculateSplineCoeficients(5,x,z,coef,1);
+	
+	for(i=0;i<4;i++){
+		TEST_ASSERT_FLOAT_WITHIN(0.01,coef[0][0+i*4],ss[i][0]);
+		TEST_ASSERT_FLOAT_WITHIN(0.01,coef[0][1+i*4],ss[i][1]);
+		TEST_ASSERT_FLOAT_WITHIN(0.01,coef[0][2+i*4],ss[i][2]);
+		TEST_ASSERT_FLOAT_WITHIN(0.01,coef[0][3+i*4],ss[i][3]);
+	}
+}
+
 int main(void){
 
 	initialize_test_interface();
@@ -98,5 +119,6 @@ int main(void){
 	RUN_TEST(test_setZNodepoints);
 	RUN_TEST(test_getNODFunctions);
 	RUN_TEST(test_interfaceInterpolation);
+	RUN_TEST(test_cubicSplineCoefficientsCalculation);
 	return UNITY_END();
 }
