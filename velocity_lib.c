@@ -55,7 +55,7 @@ between then
 
 	/* Calculate coefficients matrix (interfaces interpolation) */
 	coef = sf_floatalloc2(4*(nsz-1),1);
-	calculateSplineCoeficients(nsz,x,szz,coef,1);
+	calculateSplineCoeficients(nsz,x,szz,coef[0]);
 
 	zi = sf_floatalloc(1);
 
@@ -108,7 +108,8 @@ they are interpolated using natural cubic spline interpolation.
 
 	/* Calculate coefficients matrix (interfaces interpolation) */
 	coef = sf_floatalloc2(4*(nx-1),nsv-1);
-	calculateSplineCoeficients(nx,x,sz,coef,nsv-1);
+	for(i=0;i<nsv-1;i++)
+		calculateSplineCoeficients(nx,x,sz,coef[i]);
 
 	zi = sf_floatalloc(nsv);
 	zi[nsv-1] = (n[0]-1)*d[0]+o[0];

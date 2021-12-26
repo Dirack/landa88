@@ -156,50 +156,38 @@ float calculateRNIPWithDynamicRayTracing(
 
 void transmitedRNIPThroughInterface(
 					void *par, /* Raytrace struct */
+					void *interface,
 					int *ir, /* ray sample index */
 					float **traj, /* ray trajectory */
-					float *rnip, /* RNIP parameter */
-					float *sz,
-					int nsz,
-					float osz,
-					float dsz,
-					int itf,
-					int nx)
+					float *rnip /* RNIP parameter */)
 /*< Calculate transmited RNIP parameter through interface using Hubral laws
 Note:
 >*/
 {
 	float vi, vt=0.;
 	raytrace rt;
-	float *x;
-	float **coef;
-	float* szz; // Z coordinates of interface being inverted
+	itf2d it2;
 	int i;
+	float zi;
 
-        x = sf_floatalloc(nx);
-        szz = sf_floatalloc(nx);
-
-        for(i=0;i<nx;i++){
-                x[i] = i*dsz+osz;
-                szz[i]=sz[i+(itf*nsz)];
-        }
-
-        /* Calculate coefficients matrix (interfaces interpolation) */
-        coef = sf_floatalloc2(4*(nx-1),1);
-        calculateSplineCoeficients(nx,x,szz,coef,1);
-
+        
 	rt = (raytrace) par;
+	it2 = (itf2d) interface;
 
 	vi = getvelocity(rt,traj,*ir);
 
-	vt = getvelocity(rt,traj,(*ir)++);
+	vt = getvelocity(rt,traj,++(*ir));
 	
 	while(vi!=vt){
 		*rnip+=2*vt*rt->dt;
 
 		vi = vt;
 
-		vt = getvelocity(rt,traj,(*ir)++);
+		vt = getvelocity(rt,traj,++(*ir));
+		zi = getZCoordinateOfInterface(it2,traj[*ir][1]);
+		if(zi>traj[*ir][0]){
+			sf_warning("TODO");
+		}
 	}
 
 }
@@ -222,11 +210,17 @@ Note:
 >*/
 {
 
-	int i; // loop counter
+	int i, j; // loop counter
 	float rnip=0.; // RNIP parameter
 	raytrace rt; // raytrace struct
 	float vt, vi; // velocities
 	float *x; // (z,x) position vector
+	float* szz; // Z coordinates of interface being inverted
+	itf2d interface;
+
+	szz = sf_floatalloc(nsz/2);
+
+	//interface = itf2d_init(szz,nsz/2,osz,dsz);
 
 	rt = (raytrace) par;
 	x = sf_floatalloc(2);
@@ -244,8 +238,12 @@ Note:
 
 		/* If the ray reaches interface use transmission law */
 		if(vt!=vi){
-			//sf_warning("(%d) vi=%f vt=%f",i,vi,vt);
-			transmitedRNIPThroughInterface(rt,&i,traj,&rnip,sz,nsz,osz,dsz,itf,nx);
+			for(j=0;j<nsz/2;j++){
+				szz[j]=sz[j+((itf-1)*nsz/2)];
+			}
+			interface = itf2d_init(szz,nsz/2,osz,dsz);
+			//itf2d_setZNodepoints(interface,szz);
+			transmitedRNIPThroughInterface(rt,interface,&i,traj,&rnip);
 			vi=vt;
 		}
 
