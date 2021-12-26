@@ -18,11 +18,14 @@
  */
 
 #include <rsf.h>
+#include <stdbool.h>
 #include "raytrace.h"
 #include "grid2.h"
 #include "atela.h"
 #include "dynamic.h"
 #include "interface2d.h"
+#include <math.h>
+/*^*/
 
 #ifndef _raytrace_h
 
@@ -152,6 +155,12 @@ float calculateRNIPWithDynamicRayTracing(
 	sf_dynamic_runge_close();
 
 	return rnip;
+}
+
+float snellslaw(float ei, float vi, float vt)
+/*< Snells Law to get transmission angle >*/
+{
+	return asinf((vt/vi)*sinf(ei));
 }
 
 void transmitedRNIPThroughInterface(

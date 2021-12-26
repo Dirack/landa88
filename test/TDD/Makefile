@@ -12,11 +12,15 @@
 # 
 # License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
-all:	test_interface2d.x
-	./$< && rm $<
+all:	test_interface2d.x test_raytrace.x
 
-%.x:	%.c ../../interface2d.c Unity/unity.c
+test_interface2d.x:	test_interface2d.c ../../interface2d.c Unity/unity.c
 	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf
+	./$@ && rm $@
+
+test_raytrace.x:	test_raytrace.c ../../raytrace.c ../../grid2.c ../../atela.c ../../dynamic.c ../../interface2d.c Unity/unity.c
+	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
+	./$@ && rm $@
 
 clean:
 	rm *.x
