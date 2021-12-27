@@ -7,6 +7,6 @@
 cd landa88tomo
 set args <model_0.rsf shotsfile=nipsources_1.rsf anglefile=angles_1.rsf t0s=t0s.rsf m0s=m0s.rsf rnips=rnips.rsf betas=betas.rsf sz=sz_2.rsf vz=sv_2.rsf zspline=zspline_1.rsf vspline=vspline_1.rsf misfit=misfit_1.rsf misinv=misfit_1_0.rsf itf=1 data=interpolatedDataCube2.rsf nit=50 > model_1.rsf
 show args
-b velocity_lib.c:112
+b raytrace.c:172
 #r
 #q

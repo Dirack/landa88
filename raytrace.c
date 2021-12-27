@@ -174,7 +174,7 @@ float calculateeiAngle(float **traj, int ir)
 	x[1] = traj[ir][1]-traj[ir-1][1];
 
 	ei = sqrtf(x[0]*x[0]+x[1]*x[1]);
-	ei = acos(x[0]/ei);
+	ei = acos(-x[0]/ei);
 
 	return ei;
 }
@@ -190,7 +190,8 @@ void hubralTransmissionLaw(float *rnip, float vt, float vi, float ei)
 	ri = *rnip;
 	ri = (1./ri);
 	ri *= (cosf(ei)*cosf(ei))/(cosf(et)*cosf(et));
-	*rnip = (vt/vi)*ri;
+	ri = (vt/vi)*ri;
+	*rnip = 1./ri;
 }
 
 void transmitedRNIPThroughInterface(
@@ -209,6 +210,7 @@ Note:
 	int i;
 	float zi;
 	float ei;
+	int pass=0; // Ray passed through interface?
         
 	rt = (raytrace) par;
 	it2 = (itf2d) interface;
@@ -224,9 +226,11 @@ Note:
 
 		vt = getvelocity(rt,traj,++(*ir));
 		zi = getZCoordinateOfInterface(it2,traj[*ir][1]);
-		if(zi>traj[*ir][0]){
-			ei = calculateeiAngle(traj,*ir);
+		if(zi>traj[*ir][0] && pass!=1){
+			ei = calculateeiAngle(traj,*ir-1);
 			hubralTransmissionLaw(rnip,vt,vi,ei);
+			pass = 1;
+			vt = getvelocity(rt,traj,++(*ir));
 		}
 	}
 
