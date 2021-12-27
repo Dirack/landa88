@@ -163,6 +163,36 @@ float snellslaw(float ei, float vi, float vt)
 	return asinf((vt/vi)*sinf(ei));
 }
 
+float calculateeiAngle(float **traj, int ir)
+/*< Calculate incident angle >*/
+{
+	float *x;
+	float ei;
+
+	x = sf_floatalloc(2);
+	x[0] = traj[ir][0]-traj[ir-1][0];
+	x[1] = traj[ir][1]-traj[ir-1][1];
+
+	ei = sqrtf(x[0]*x[0]+x[1]*x[1]);
+	ei = acos(x[0]/ei);
+
+	return ei;
+}
+
+void hubralTransmissionLaw(float *rnip, float vt, float vi, float ei)
+/*< Calculate transmited RNIP using Hubral's transmission law >*/
+{
+	float et;
+	float ri;
+
+	et = snellslaw(ei,vi,vt);
+
+	ri = *rnip;
+	ri = (1./ri);
+	ri *= (cosf(ei)*cosf(ei))/(cosf(et)*cosf(et));
+	*rnip = (vt/vi)*ri;
+}
+
 void transmitedRNIPThroughInterface(
 					void *par, /* Raytrace struct */
 					void *interface,
@@ -178,7 +208,7 @@ Note:
 	itf2d it2;
 	int i;
 	float zi;
-
+	float ei;
         
 	rt = (raytrace) par;
 	it2 = (itf2d) interface;
@@ -195,7 +225,8 @@ Note:
 		vt = getvelocity(rt,traj,++(*ir));
 		zi = getZCoordinateOfInterface(it2,traj[*ir][1]);
 		if(zi>traj[*ir][0]){
-			sf_warning("TODO");
+			ei = calculateeiAngle(traj,*ir);
+			hubralTransmissionLaw(rnip,vt,vi,ei);
 		}
 	}
 
