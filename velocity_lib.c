@@ -101,15 +101,20 @@ they are interpolated using natural cubic spline interpolation.
 	float *x; // X coordinates nodes
 	float** coef; // Cubic spline coefficients
 	float xx; // X coordinates in velocity model
+	float *szz;
 
 	x = sf_floatalloc(nx);
+	szz = sf_floatalloc(nx);
+
 	for(i=0;i<nx;i++)
 		x[i] = i*dsz+osz;
 
 	/* Calculate coefficients matrix (interfaces interpolation) */
 	coef = sf_floatalloc2(4*(nx-1),nsv-1);
-	for(i=0;i<nsv-1;i++)
-		calculateSplineCoeficients(nx,x,sz,coef[i]);
+	for(i=0;i<nsv-1;i++){
+		for(j=0;j<nx;j++) szz[j]=sz[(i*nx)+j];
+		calculateSplineCoeficients(nx,x,szz,coef[i]);
+	}
 
 	zi = sf_floatalloc(nsv);
 	zi[nsv-1] = (n[0]-1)*d[0]+o[0];
