@@ -23,23 +23,28 @@ void setUp(){};
 
 void tearDown(){};
 
-void test_snellslaw(){
+void test_getTransmissionAngleSnellsLaw()
+/*< Function to get transmission angle using snell's law >*/
+{
 	float ei=SF_PI/6., vt=1.5, vi=1.7;
-	TEST_ASSERT_FLOAT_WITHIN(0.001,0.456,snellslaw(ei,vi,vt));
+	TEST_ASSERT_FLOAT_WITHIN(0.001,0.456,getTransmissionAngleSnellsLaw(ei,vi,vt));
 }
 
-void test_hubralTransmissionLaw(){
+void test_getTransmitedRNIPHubralTransmissionLaw()
+/*< Test function to get Transmited RNIP parameter through interface using Hubral's transmission law >*/
+{
 	float rnip=1.0;
 	float vt=1.5, vi=1.7;
 	float ei=SF_PI/6.;
 
-	hubralTransmissionLaw(&rnip,vt,vi,ei);
+	getTransmitedRNIPHubralTransmissionLaw(&rnip,vt,vi,ei);
 	TEST_ASSERT_FLOAT_WITHIN(0.01,1.218,rnip);
 }
 
-void test_calculateeiAngle(){
+void test_calculateIncidentAngle()
+/*< Test function to get incident angle for a given ray sample coordinate in ray trajectory >*/
+{
 	float t[4]={1.22,1.05,1.2,1.0};
-	float ei;
 	float **traj;
 
 	traj = sf_floatalloc2(2,2);
@@ -49,15 +54,40 @@ void test_calculateeiAngle(){
 	traj[1][0]=t[2];
 	traj[1][1]=t[3];
 
-	ei = calculateeiAngle(traj,1);
-	TEST_ASSERT_FLOAT_WITHIN(0.01,1.19,ei);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.19,calculateIncidentAngle(traj,1));
+}
+
+void test_getVelocityForRaySampleLocation()
+/*< Test of the function to get velocity from grid for a ray sample location given >*/
+{
+	float *slow;
+	int im;
+	raytrace rt;
+	int n[2]={10,10};
+	float o[2]={0.,-2.};
+	float d[2]={0.01,0.01};
+	float t[2]={0.05,-1.95};
+	float **traj;
+
+        slow =  sf_floatalloc(100);
+	traj = sf_floatalloc2(2,1);
+	traj[0][0] = t[0];
+	traj[0][1] = t[1];
+
+	for(im=0;im<100;im++)
+		slow[im] = 1./(1.5*1.5);
+
+	rt = raytrace_init(2,true,10,1.0,n,o,d,slow,4);
+
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.5,getVelocityForRaySampleLocation(rt,traj,0));
 }
 
 int main(void){
 
 	UNITY_BEGIN();
-	RUN_TEST(test_snellslaw);
-	RUN_TEST(test_hubralTransmissionLaw);
-	RUN_TEST(test_calculateeiAngle);
+	RUN_TEST(test_getTransmissionAngleSnellsLaw);
+	RUN_TEST(test_getTransmitedRNIPHubralTransmissionLaw);
+	RUN_TEST(test_calculateIncidentAngle);
+	RUN_TEST(test_getVelocityForRaySampleLocation);
 	return UNITY_END();
 }

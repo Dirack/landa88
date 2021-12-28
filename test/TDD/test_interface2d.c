@@ -110,6 +110,69 @@ void test_cubicSplineCoefficientsCalculation(){
 	}
 }
 
+void test_cubicSplineCoefficientsCalculationPassedAsVector(){
+/*< Test cubic spline coefficients calculation function passing coef matrix as vector component >*/
+
+	float x[5]={1.0,2.0,4.0,6.0,7.0};
+	float z[5]={2.0,4.0,1.0,3.0,3.0};
+	float ss[4][4] = {{-0.783,0.,2.783,2.},{0.692,-2.35,0.433,4},{-0.483,1.8,-0.666,1.},{0.366,-1.1,0.733,3.}};
+	float **coef;
+	int n=5;
+	int i, j;
+
+	coef = sf_floatalloc2(4*(n-1),2);
+	for(i=0;i<2;i++){
+                calculateSplineCoeficients(n,x,z,coef[i]);
+        }
+
+	for(j=0;j<2;j++){
+		for(i=0;i<4;i++){
+			TEST_ASSERT_FLOAT_WITHIN(0.01,coef[j][0+i*4],ss[i][0]);
+			TEST_ASSERT_FLOAT_WITHIN(0.01,coef[j][1+i*4],ss[i][1]);
+			TEST_ASSERT_FLOAT_WITHIN(0.01,coef[j][2+i*4],ss[i][2]);
+			TEST_ASSERT_FLOAT_WITHIN(0.01,coef[j][3+i*4],ss[i][3]);
+		}
+	}
+}
+
+void test_calcInterfacesZcoord(){
+/*< Test interfaces Z(x) calculation >*/
+
+	float x[5]={1.0,2.0,4.0,6.0,7.0};
+	float z1[5]={1.0,1.0,1.0,1.0,1.0};
+	float z2[5]={1.85,1.85,1.85,1.85,1.85};
+	float **coef;
+	float *zi;
+	int n=5;
+	int i, j;
+
+	coef = sf_floatalloc2(4*(n-1),2);
+	zi = sf_floatalloc(2);
+
+	calculateSplineCoeficients(n,x,z1,coef[0]);
+	calculateSplineCoeficients(n,x,z2,coef[1]);
+
+	// Spline 1
+	calcInterfacesZcoord(zi,2,1.5-1.0,0,coef);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.0,zi[0]);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.85,zi[1]);
+
+	// Spline 2
+	calcInterfacesZcoord(zi,2,2.5-2.0,1,coef);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.0,zi[0]);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.85,zi[1]);
+
+	// Spline 3
+	calcInterfacesZcoord(zi,2,4.5-4.0,2,coef);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.0,zi[0]);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.85,zi[1]);
+
+	// Spline 4
+	calcInterfacesZcoord(zi,2,6.5-6.0,3,coef);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.0,zi[0]);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.85,zi[1]);
+}
+
 int main(void){
 
 	initialize_test_interface();
@@ -120,5 +183,7 @@ int main(void){
 	RUN_TEST(test_getNODFunctions);
 	RUN_TEST(test_interfaceInterpolation);
 	RUN_TEST(test_cubicSplineCoefficientsCalculation);
+	RUN_TEST(test_cubicSplineCoefficientsCalculationPassedAsVector);
+	RUN_TEST(test_calcInterfacesZcoord);
 	return UNITY_END();
 }

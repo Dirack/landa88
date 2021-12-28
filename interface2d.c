@@ -113,12 +113,8 @@ void calcInterfacesZcoord(	float *zi, /* Interfaces depth coordinates */
 {
 	int i; // Loop counter
 
-	for(i=0;i<nint;i++){
-		zi[i] = coef[i][si*4+0]*xs*xs*xs+
-			coef[i][si*4+1]*xs*xs+
-			coef[i][si*4+2]*xs+
-			coef[i][si*4+3];
-	}
+	for(i=0;i<nint;i++)
+		zi[i] = coef[i][si*4+0]*xs*xs*xs+coef[i][si*4+1]*xs*xs+coef[i][si*4+2]*xs+coef[i][si*4+3];
 }
 
 itf2d itf2d_init(float *sz, /* Interface nodepoints z(x) */

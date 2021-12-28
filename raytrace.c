@@ -49,19 +49,20 @@ struct RayTrace {
 
 static void iso_rhs(void* par, float* y, float* f){}
 
-float getvelocity(void *par, float **traj, int i)
-/* Get velocity from a point in the ray trajectory
+float getVelocityForRaySampleLocation(
+		  void *par, /* Raytrace struct */
+		  float **traj, /* Ray trajectory */
+		  int i /* Sample index in ray trajectory */)
+/*< Get velocity from a point in the ray trajectory
 Note: The i variable is the sample index of the ray trajectory traj. This
 function returns the velocity from the grid in the sample location
 (z,x)=(traj[i][0],traj[i][1]).
-*/
+>*/
 {
 	raytrace rt;
-	float *x;
+	float x[2];
 
 	rt = (raytrace) par;
-
-	x=sf_floatalloc(2);
 
 	x[0]=traj[i][0];
 	x[1]=traj[i][1];
@@ -157,19 +158,27 @@ float calculateRNIPWithDynamicRayTracing(
 	return rnip;
 }
 
-float snellslaw(float ei, float vi, float vt)
+float getTransmissionAngleSnellsLaw(
+		float ei, /* Incident angle in radians */
+		float vi, /* Velocity in incident ray layer */
+		float vt /* Velocity in transmited ray layer */)
 /*< Snells Law to get transmission angle >*/
 {
 	return asinf((vt/vi)*sinf(ei));
 }
 
-float calculateeiAngle(float **traj, int ir)
-/*< Calculate incident angle >*/
+float calculateIncidentAngle(
+			     float **traj, /* Ray trajectory */
+			     int ir /* Ray sample index */)
+/*< Calculate incident angle 
+Note: This function calculates a vector using the diffence between
+traj[ir] and traj[ir-1]. The angle between this vector and the normal
+to the interface will be the incident angle returned
+>*/
 {
-	float *x;
+	float x[2];
 	float ei;
 
-	x = sf_floatalloc(2);
 	x[0] = traj[ir][0]-traj[ir-1][0];
 	x[1] = traj[ir][1]-traj[ir-1][1];
 
@@ -179,13 +188,19 @@ float calculateeiAngle(float **traj, int ir)
 	return ei;
 }
 
-void hubralTransmissionLaw(float *rnip, float vt, float vi, float ei)
-/*< Calculate transmited RNIP using Hubral's transmission law >*/
+void getTransmitedRNIPHubralTransmissionLaw(
+			   float *rnip, /* RNIP in incident ray layer */
+			   float vt, /* Velocity in transmited ray layer */
+			   float vi, /* Velocity in incident ray layer */
+			   float ei /* Ray incident angle*/)
+/*< Calculate transmited RNIP through interface using Hubral's transmission law
+Note: RNIP parameter is modified inside the function to transmited RNIP value
+>*/
 {
 	float et;
 	float ri;
 
-	et = snellslaw(ei,vi,vt);
+	et = getTransmissionAngleSnellsLaw(ei,vi,vt);
 
 	ri = *rnip;
 	ri = (1./ri);
@@ -196,41 +211,43 @@ void hubralTransmissionLaw(float *rnip, float vt, float vi, float ei)
 
 void transmitedRNIPThroughInterface(
 					void *par, /* Raytrace struct */
-					void *interface,
+					void *interface, /* Interface struct */
 					int *ir, /* ray sample index */
 					float **traj, /* ray trajectory */
 					float *rnip /* RNIP parameter */)
 /*< Calculate transmited RNIP parameter through interface using Hubral laws
-Note:
+Note: Velocity model interpolation makes a transition velocity zone close to
+the interface, in this zone is applied transmission law where the ray passes
+through interface
 >*/
 {
-	float vi, vt=0.;
+	float vi;
+	float vt=0.;
 	raytrace rt;
 	itf2d it2;
-	int i;
 	float zi;
 	float ei;
-	int pass=0; // Ray passed through interface?
+	int pass=false; // Ray passed through interface?
         
 	rt = (raytrace) par;
 	it2 = (itf2d) interface;
 
-	vi = getvelocity(rt,traj,*ir);
+	vi = getVelocityForRaySampleLocation(rt,traj,*ir);
 
-	vt = getvelocity(rt,traj,++(*ir));
+	vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
 	
 	while(vi!=vt){
 		*rnip+=2*vt*rt->dt;
 
 		vi = vt;
 
-		vt = getvelocity(rt,traj,++(*ir));
+		vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
 		zi = getZCoordinateOfInterface(it2,traj[*ir][1]);
-		if(zi>traj[*ir][0] && pass!=1){
-			ei = calculateeiAngle(traj,*ir-1);
-			hubralTransmissionLaw(rnip,vt,vi,ei);
-			pass = 1;
-			vt = getvelocity(rt,traj,++(*ir));
+		if(zi>traj[*ir][0] && pass==false){
+			ei = calculateIncidentAngle(traj,*ir-1);
+			getTransmitedRNIPHubralTransmissionLaw(rnip,vt,vi,ei);
+			pass = true;
+			vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
 		}
 	}
 
