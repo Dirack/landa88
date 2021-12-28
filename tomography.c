@@ -185,6 +185,7 @@ sum of t=ts+tr.
 			nrnip[is-(itf*ns)] = calculateRNIPWithHubralLaws(rt,traj,it,vv,ct0,itf,sz,nsz,osz,dsz,ns);
 			//nrnip[is-(itf*ns)] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
 
+			//sf_warning("rnipc=%f RNIP=%f",v0*ct0,nrnip[is-(itf*ns)]);
 			if(nrnip[is-(itf*ns)]<0.0) sf_warning("rnipc=%f RNIP=%f",v0*ct0,nrnip[is-(itf*ns)]);
 
 			/* Escape vector */ 

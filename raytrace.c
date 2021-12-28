@@ -168,6 +168,7 @@ float getTransmissionAngleSnellsLaw(
 }
 
 float calculateIncidentAngle(
+			     void *par, /* Interface struct */
 			     float **traj, /* Ray trajectory */
 			     int ir /* Ray sample index */)
 /*< Calculate incident angle 
@@ -177,13 +178,29 @@ to the interface will be the incident angle returned
 >*/
 {
 	float x[2];
+	float n[2];
 	float ei;
+	itf2d it2;
+
+	it2 = (itf2d) par;
+
+	n[0] = getZCoordinateOfInterface(it2,traj[ir][1]+0.01)
+	-getZCoordinateOfInterface(it2,traj[ir][1]);
+	n[1] = 0.01;
+
+	ei = sqrtf(n[0]*n[0]+n[1]*n[1]);
+	n[0]/=ei;
+	n[1]/=ei;
+
+	ei = n[0];
+	n[0]=-n[1];
+	n[1]=ei;
 
 	x[0] = traj[ir][0]-traj[ir-1][0];
 	x[1] = traj[ir][1]-traj[ir-1][1];
 
 	ei = sqrtf(x[0]*x[0]+x[1]*x[1]);
-	ei = acos(-x[0]/ei);
+	ei = acos((x[0]*n[0]+x[1]*n[1])/ei);
 
 	return ei;
 }
@@ -244,7 +261,7 @@ through interface
 		vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
 		zi = getZCoordinateOfInterface(it2,traj[*ir][1]);
 		if(zi>traj[*ir][0] && pass==false){
-			ei = calculateIncidentAngle(traj,*ir-1);
+			ei = calculateIncidentAngle(it2,traj,*ir-1);
 			getTransmitedRNIPHubralTransmissionLaw(rnip,vt,vi,ei);
 			pass = true;
 			vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
