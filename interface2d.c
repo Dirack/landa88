@@ -203,3 +203,17 @@ void itf2d_getZNodepoints(
 	for(i=0;i<itf->n;i++)
 		z[i]=itf->z[i];
 }
+
+void itf2d_getSplineCoefficients(
+		itf2d itf, /* Interface */
+		float *c, /* 4 Spline coefficients */
+		int is /* Spline index */)
+/*< Get Spline Coefficients from coefficients vector for a given spline index
+Note: Coefficients vector has 4 coefficients for each (nx-1) spline
+>*/
+{
+	c[0] = itf->coef[is*4+0];
+	c[1] = itf->coef[is*4+1];
+	c[2] = itf->coef[is*4+2];
+	c[3] = itf->coef[is*4+3];
+}

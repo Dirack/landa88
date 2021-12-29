@@ -205,11 +205,41 @@ to the interface will be the incident angle returned
 	return ei;
 }
 
+float calculateInterfaceCurvature(void *par, float x)
+/*< TODO >*/
+{
+
+	float kf;
+	float f1, f2;
+	int is;
+	itf2d it2;
+	float coef[4];
+	float a, b, c;
+
+	it2 = (itf2d) par;
+	is = (x-itf2d_o(it2))/itf2d_d(it2);
+	itf2d_getSplineCoefficients(it2,coef,is);
+
+	a = coef[0];
+	b = coef[1];
+	c = coef[2];
+
+	f1 = 3*a*x*x+2*b*x+c;
+	//f2 = fabs(6*a*x+2*b);
+	f2 = fabs(6*a*x+2*b);
+	f1 = 1+f1*f1;
+	f1 = f1*f1*f1;
+	kf = f2/(sqrtf(f1));
+
+	return kf;
+}
+
 void getTransmitedRNIPHubralTransmissionLaw(
 			   float *rnip, /* RNIP in incident ray layer */
 			   float vt, /* Velocity in transmited ray layer */
 			   float vi, /* Velocity in incident ray layer */
-			   float ei /* Ray incident angle*/)
+			   float ei, /* Ray incident angle*/
+			   float kf /* Interface curvature */)
 /*< Calculate transmited RNIP through interface using Hubral's transmission law
 Note: RNIP parameter is modified inside the function to transmited RNIP value
 >*/
@@ -223,6 +253,9 @@ Note: RNIP parameter is modified inside the function to transmited RNIP value
 	ri = (1./ri);
 	ri *= (cosf(ei)*cosf(ei))/(cosf(et)*cosf(et));
 	ri = (vt/vi)*ri;
+
+	ri = ri+ (1./(cosf(et)*cosf(et))*((vt/vi)*cosf(ei)-cosf(et)))*kf;
+
 	*rnip = 1./ri;
 }
 
@@ -245,6 +278,7 @@ through interface
 	float zi;
 	float ei;
 	int pass=false; // Ray passed through interface?
+	float kf;
         
 	rt = (raytrace) par;
 	it2 = (itf2d) interface;
@@ -262,7 +296,8 @@ through interface
 		zi = getZCoordinateOfInterface(it2,traj[*ir][1]);
 		if(zi>traj[*ir][0] && pass==false){
 			ei = calculateIncidentAngle(it2,traj,*ir-1);
-			getTransmitedRNIPHubralTransmissionLaw(rnip,vt,vi,ei);
+			kf = calculateInterfaceCurvature(it2,traj[*ir][1]);
+			getTransmitedRNIPHubralTransmissionLaw(rnip,vt,vi,ei,kf);
 			pass = true;
 			vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
 		}

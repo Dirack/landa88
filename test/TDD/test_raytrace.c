@@ -36,8 +36,20 @@ void test_getTransmitedRNIPHubralTransmissionLaw()
 	float rnip=1.0;
 	float vt=1.5, vi=1.7;
 	float ei=SF_PI/6.;
+	itf2d it2;
+	int i;
+	float *sz;
+	float kf;
 
-	getTransmitedRNIPHubralTransmissionLaw(&rnip,vt,vi,ei);
+	sz = sf_floatalloc(5);
+
+	for(i=0;i<5;i++)
+		sz[i]=1.0;
+
+	it2 = itf2d_init(sz,5,0.,0.5);
+
+	kf = calculateInterfaceCurvature(it2,1.2);
+	getTransmitedRNIPHubralTransmissionLaw(&rnip,vt,vi,ei,kf);
 	TEST_ASSERT_FLOAT_WITHIN(0.01,1.218,rnip);
 }
 
@@ -46,6 +58,15 @@ void test_calculateIncidentAngle()
 {
 	float t[4]={1.22,1.05,1.2,1.0};
 	float **traj;
+	itf2d it2;
+	float *sz;
+	int i;
+
+	sz = sf_floatalloc(5);
+	for(i=0;i<5;i++)
+		sz[i]=1.0;
+
+	it2 = itf2d_init(sz,5,0.,0.5);
 
 	traj = sf_floatalloc2(2,2);
 
@@ -54,7 +75,7 @@ void test_calculateIncidentAngle()
 	traj[1][0]=t[2];
 	traj[1][1]=t[3];
 
-	TEST_ASSERT_FLOAT_WITHIN(0.01,1.19,calculateIncidentAngle(traj,1));
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.19,calculateIncidentAngle(it2,traj,1));
 }
 
 void test_getVelocityForRaySampleLocation()

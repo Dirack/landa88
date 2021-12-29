@@ -196,10 +196,11 @@ sum of t=ts+tr.
 			/* Calculate BETA */
 			/* Dot product with unit vector pointing upward */
                         t = sqrt(x[0]*x[0]+x[1]*x[1]); /* Length */
-			t = acos(x[0]/t)-SF_PI; /* Teta */
-			if(x[1]<0) t = -t;
+			t = acos(-x[0]/t);//-SF_PI; /* Teta */
+			//if(x[1]<0) t = -t;
 
 			nbeta[is-(itf*ns)]=t;
+			//sf_warning("beta=%f BETA=%f",nbeta[is-(itf*ns)],BETA[is-(itf*ns)]);
 
 			alpha = sinf(nbeta[is-(itf*ns)])/nrnip[is-(itf*ns)];
 
@@ -247,8 +248,8 @@ sum of t=ts+tr.
 
 	/* L2 norm to evaluate the time misfit */
 	// TODO: Choose the best object function criteria
-	//tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
-	tmis = sumAmplitudes;
+	tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+	//tmis = sumAmplitudes;
 	return tmis;
 }
 

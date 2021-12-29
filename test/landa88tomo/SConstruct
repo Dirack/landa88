@@ -156,11 +156,11 @@ Plot('mod1-imggz',['mod1gz','inverted-nipsourcesgz'],'Overlay')
 # Plot result: Inverted and original models side by side
 Result('invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
 
-#layers2 = ((1.0,1.0,1.0,1.2,1.2,1.0,0.9,0.9,1.0,1.0,1.0),
-#	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
-
-layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
+layers2 = ((1.0,1.0,1.0,1.2,1.2,1.0,0.9,0.9,1.0,1.0,1.0),
 	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
+
+#layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
+#	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
 
 # Nodepoints of the cubic spline velocity function
 Flow('sz_0.asc',None,
