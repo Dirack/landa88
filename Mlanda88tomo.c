@@ -77,6 +77,10 @@ int main(int argc, char* argv[])
 	sf_file misfit; // Misfit of the previous iteration
 	sf_file misinv; // Misfit result of this VFSA iteration
 	sf_file datafile; // Prestack data A(m,h,t)
+	sf_file rnips_out;
+	sf_file betas_out;
+	sf_file t0s_out;
+	sf_file m0s_out;
 
 	sf_init(argc,argv);
 
@@ -95,6 +99,10 @@ int main(int argc, char* argv[])
 	misfit = sf_input("misfit");
 	misinv = sf_output("misinv");
 	datafile = sf_input("data");
+	rnips_out = sf_output("rnipsout");
+	betas_out = sf_output("betasout");
+	t0s_out = sf_output("t0sout");
+	m0s_out = sf_output("m0sout");
 
 	/* Velocity model: get 2D grid parameters */
 	if(!sf_histint(vel,"n1",n)) sf_error("No n1= in input");

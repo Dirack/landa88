@@ -226,6 +226,10 @@ for j in range(nitf):
 		ray =  'ray_%d_%d' % (i,j)
 		nipsources = 'nipsources_%d_%d' % (i,j)
 		angles = 'angles_%d_%d' % (i,j)
+		t0sout = 't0sout_%d_%d' % (i,j)
+		m0sout = 'm0sout_%d_%d' % (i,j)
+		rnipsout = 'rnipsout_%d_%d' % (i,j)
+		betasout = 'betasout_%d_%d' % (i,j)
 
 		# NIP model setup, ray-tracing from acquisition surface to NIP sources
 		Flow([ray,nipangles],[model,'shotsfile','anglefile','t0s'],
@@ -239,10 +243,11 @@ for j in range(nitf):
 
 		# forward modeling
 		# do a ray-tracing from NIP sources to acquisition surface and measure traveltime
-		Flow([velinv,zspline,vspline,misinv],
-		[model,nipsources,angles,'t0s','m0s','rnips','betas',sz,sv,mis,'interpolatedDataCube2'],
+		Flow([velinv,zspline,vspline,misinv,t0sout,m0sout,rnipsout,betasout],
+		[model,nipsources,angles,'t0s','m0s',
+		'rnips','betas',sz,sv,mis,'interpolatedDataCube2'],
 		    '''
-		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]}
 		    ''' % (nit,j))
 
 		model = velinv
