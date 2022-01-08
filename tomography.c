@@ -103,7 +103,8 @@ float calculateTimeMisfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   float *sz,
 			   int nsz,
 			   float osz,
-			   float dsz)
+			   float dsz,
+			   float *vv)
 /*< Return L2 norm of the time misfit: The time misfit is the difference
 between the traveltime calculated using raytracing and the traveltime calculated
 with the CRE traveltime formula 
@@ -148,10 +149,10 @@ sum of t=ts+tr.
 	int im; // CMP index
 	int tetai; // time index
 	int numSamples=0; // samples counter
-	float *vv;
+	//float *vv;
 
-	vv = sf_floatalloc(3);
-	vv[0]=1.5; vv[1]=1.7; vv[2]=2.0;
+	//vv = sf_floatalloc(3);
+	//vv[0]=1.5; vv[1]=1.7; vv[2]=2.0;
 
 	x = sf_floatalloc(2);
 	nrnip = sf_floatalloc(ns);
@@ -176,13 +177,13 @@ sum of t=ts+tr.
 		it = trace_ray (rt, x, p, traj);
 		if(it>0){ // Ray endpoint at acquisition surface
 
-			cm0 = x[1];
-			ct0 = 2*it*dt;
+			cm0 = x[1]; m0[is]=cm0;
+			ct0 = 2*it*dt; t0[is]=ct0;
                         x[0]=traj[it][0];
                         x[1]=traj[it][1];
 
                         /* Calculate RNIP */
-			nrnip[is-(itf*ns)] = calculateRNIPWithHubralLaws(rt,traj,it,vv,ct0,itf,sz,nsz,osz,dsz,ns);
+			nrnip[is-(itf*ns)] = calculateRNIPWithHubralLaws(rt,traj,it,vv,ct0,itf,sz,nsz,osz,dsz,ns); RNIP[is]=nrnip[is-(itf*ns)];
 			//nrnip[is-(itf*ns)] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
 
 			//sf_warning("rnipc=%f RNIP=%f",v0*ct0,nrnip[is-(itf*ns)]);
@@ -200,6 +201,7 @@ sum of t=ts+tr.
 			//if(x[1]<0) t = -t;
 
 			nbeta[is-(itf*ns)]=t;
+			BETA[is]=t;
 			//sf_warning("beta=%f BETA=%f",nbeta[is-(itf*ns)],BETA[is-(itf*ns)]);
 
 			alpha = sinf(nbeta[is-(itf*ns)])/nrnip[is-(itf*ns)];
@@ -248,8 +250,8 @@ sum of t=ts+tr.
 
 	/* L2 norm to evaluate the time misfit */
 	// TODO: Choose the best object function criteria
-	tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
-	//tmis = sumAmplitudes;
+	//tmis = (ns)*(sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+	tmis = sumAmplitudes;
 	return tmis;
 }
 

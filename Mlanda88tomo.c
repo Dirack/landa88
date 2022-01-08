@@ -14,6 +14,8 @@ The time misfit is calculated by the difference between the reflection traveltim
 #include "vfsacrsnh_lib.h"
 #include "velocity_lib.h"
 
+#define RAD2DEG 180./SF_PI
+
 int main(int argc, char* argv[])
 {
 	bool verb; // Verbose parameter
@@ -58,10 +60,17 @@ int main(int argc, char* argv[])
 	int nsv; // Dimension of sv vector
 	float* mis; // Misfit of the current iteration
 	int itf; // Interface to invert (index)
+	int nx; // Nodepoints for each interface
 	float ***data; // Prestack data A(m,h,t)
 	int data_n[3]; // n1, n2, n3 dimension of data
 	float data_o[3]; // o1, o2, o3 axis origins of data
 	float data_d[3]; // d1, d2, d3 sampling of data
+	float *otm0;
+	float **otm02;
+	float *ott0;
+	float *otrnip;
+	float *otbeta;
+	float *otangles;
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -79,8 +88,10 @@ int main(int argc, char* argv[])
 	sf_file datafile; // Prestack data A(m,h,t)
 	sf_file rnips_out;
 	sf_file betas_out;
+	sf_file angles_out;
 	sf_file t0s_out;
 	sf_file m0s_out;
+	sf_file shots_out;
 
 	sf_init(argc,argv);
 
@@ -101,8 +112,10 @@ int main(int argc, char* argv[])
 	datafile = sf_input("data");
 	rnips_out = sf_output("rnipsout");
 	betas_out = sf_output("betasout");
+	angles_out = sf_output("anglesout");
 	t0s_out = sf_output("t0sout");
 	m0s_out = sf_output("m0sout");
+	shots_out = sf_output("shotsout");
 
 	/* Velocity model: get 2D grid parameters */
 	if(!sf_histint(vel,"n1",n)) sf_error("No n1= in input");
@@ -179,13 +192,29 @@ int main(int argc, char* argv[])
 
 	/* allocate parameters vectors */
 	m0 = sf_floatalloc(ns);
+	otm0 = sf_floatalloc(ns);
+	otm02 = sf_floatalloc2(2,ns);
 	sf_floatread(m0,ns,m0s);
 	t0 = sf_floatalloc(ns);
+	ott0 = sf_floatalloc(ns);
 	sf_floatread(t0,ns,t0s);
 	RNIP = sf_floatalloc(ns);
+	otrnip = sf_floatalloc(ns);
 	sf_floatread(RNIP,ns,rnips);
 	BETA = sf_floatalloc(ns);
+	otbeta = sf_floatalloc(ns);
+	otangles = sf_floatalloc(ns);
 	sf_floatread(BETA,ns,betas);
+
+	for(im=0;im<ns;im++){
+		otm0[im]=m0[im];
+		otm02[im][0]=0.;
+		otm02[im][1]=m0[im];
+		ott0[im]=t0[im];
+		otrnip[im]=RNIP[im];
+		otbeta[im]=BETA[im];
+	}
+
 
 	/* get slowness squared (Background model) */
 	nm = n[0]*n[1];
@@ -250,6 +279,31 @@ int main(int argc, char* argv[])
 	sf_putint(misinv,"n1",1);
 	sf_putint(misinv,"n2",1);
 	sf_putint(misinv,"n3",1);
+
+	/**/
+	sf_putint(t0s_out,"n1",ns);
+	sf_putint(t0s_out,"n2",1);
+	sf_putint(t0s_out,"n3",1);
+
+	sf_putint(m0s_out,"n1",ns);
+	sf_putint(m0s_out,"n2",1);
+	sf_putint(m0s_out,"n3",1);
+
+	sf_putint(shots_out,"n1",2);
+	sf_putint(shots_out,"n2",ns);
+	sf_putint(shots_out,"n3",1);
+
+	sf_putint(rnips_out,"n1",ns);
+	sf_putint(rnips_out,"n2",1);
+	sf_putint(rnips_out,"n3",1);
+
+	sf_putint(betas_out,"n1",ns);
+	sf_putint(betas_out,"n2",1);
+	sf_putint(betas_out,"n3",1);
+
+	sf_putint(angles_out,"n1",ns);
+	sf_putint(angles_out,"n2",1);
+	sf_putint(angles_out,"n3",1);
 	
 	/* Intiate optimal parameters vectors */
 	for(im=0;im<nsz;im++)
@@ -260,6 +314,8 @@ int main(int argc, char* argv[])
 	// TODO Next layer's velocity will be the same
 	// in order to avoid interference during inversion
 	sv[itf+1]=sv[itf];
+
+	nx = ns/(nsv-1);
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
 	for (q=0; q<nit; q++){
@@ -276,7 +332,7 @@ int main(int argc, char* argv[])
 		tmis=0;
 	
 		/* Calculate time misfit through forward modeling */		
-		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz);
+		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv);
 
 		if(fabs(tmis) > fabs(tmis0) ){
 			otmis = fabs(tmis);
@@ -285,6 +341,14 @@ int main(int argc, char* argv[])
 				otsz[im]=cnewz[im];
 			for(im=0;im<itf+1;im++)
 				otsv[im]=cnewv[im];
+			//for(im=itf*nx;im<(itf*nx+nx);im++){
+			for(im=0;im<ns;im++){
+				otm0[im]=m0[im];
+				otm02[im][1]=m0[im];
+				ott0[im]=t0[im];
+				otrnip[im]=RNIP[im];
+				otbeta[im]=BETA[im];
+			}
 			tmis0 = fabs(tmis);
 		}
 
@@ -311,7 +375,7 @@ int main(int argc, char* argv[])
 			}	
 		}	
 			
-		sf_warning("%d/%d itf=%d => (%f)",q+1,nit,itf,otmis);
+		sf_warning("%d/%d interface=%d => Semblance(%f);",q+1,nit,itf,otmis);
 
 	} /* loop over VFSA iterations */
 
@@ -320,10 +384,19 @@ int main(int argc, char* argv[])
 
 	/* Write velocity model file */
 	sf_floatwrite(slow,nm,velinv);
+	
+	for(im=0;im<ns;im++)
+		otangles[im]=otbeta[im]*RAD2DEG+180.;
 
 	/* Write velocity cubic spline function */
 	sf_floatwrite(otsv,nsv,vspline);
 	sf_floatwrite(otsz,nsz,zspline);
 	sf_floatwrite(&otmis,1,misinv);
+	sf_floatwrite(ott0,ns,t0s_out);
+	sf_floatwrite(otm0,ns,m0s_out);
+	sf_floatwrite(otm02[0],2*ns,shots_out);
+	sf_floatwrite(otrnip,ns,rnips_out);
+	sf_floatwrite(otbeta,ns,betas_out);
+	sf_floatwrite(otangles,ns,angles_out);
 
 }

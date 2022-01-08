@@ -156,11 +156,14 @@ Plot('mod1-imggz',['mod1gz','inverted-nipsourcesgz'],'Overlay')
 # Plot result: Inverted and original models side by side
 Result('invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
 
-layers2 = ((1.0,1.0,1.0,1.2,1.2,1.0,0.9,0.9,1.0,1.0,1.0),
-	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
-
-#layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
+#layers2 = ((1.0,1.0,1.0,1.2,1.2,1.0,0.9,0.9,1.0,1.0,1.0),
 #	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
+
+#layers2 = ((1.2,1.2,1.2,1.2,1.2,1.0,1.0,1.0,0.9,0.9,0.9),
+#	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
+
+layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
+	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
 
 # Nodepoints of the cubic spline velocity function
 Flow('sz_0.asc',None,
@@ -208,6 +211,12 @@ Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')
 models = []
 misfit = []
 sz='sz_2'
+t0s='t0s'
+m0s='m0s'
+betas='betas'
+rnips='rnips'
+shotsfile='shotsfile'
+anglefile='anglefile'
 for j in range(nitf):
 
 	model = velinv
@@ -230,9 +239,11 @@ for j in range(nitf):
 		m0sout = 'm0sout_%d_%d' % (i,j)
 		rnipsout = 'rnipsout_%d_%d' % (i,j)
 		betasout = 'betasout_%d_%d' % (i,j)
+		shotsout = 'shotsout_%d_%d' % (i,j)
+		anglesout = 'anglesout_%d_%d' % (i,j)
 
 		# NIP model setup, ray-tracing from acquisition surface to NIP sources
-		Flow([ray,nipangles],[model,'shotsfile','anglefile','t0s'],
+		Flow([ray,nipangles],[model,shotsfile,anglefile,t0s],
 			'''
 			nipmodsetup shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} nipangles=${TARGETS[1]}
 			''')
@@ -243,17 +254,23 @@ for j in range(nitf):
 
 		# forward modeling
 		# do a ray-tracing from NIP sources to acquisition surface and measure traveltime
-		Flow([velinv,zspline,vspline,misinv,t0sout,m0sout,rnipsout,betasout],
-		[model,nipsources,angles,'t0s','m0s',
-		'rnips','betas',sz,sv,mis,'interpolatedDataCube2'],
+		Flow([velinv,zspline,vspline,misinv,t0sout,m0sout,rnipsout,betasout,shotsout,anglesout],
+		[model,nipsources,angles,t0s,m0s,
+		rnips,betas,sz,sv,mis,'interpolatedDataCube2'],
 		    '''
-		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]}
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
 		    ''' % (nit,j))
 
 		model = velinv
 		sz = zspline
 		sv = vspline
 		mis = misinv
+		t0s = t0sout
+		m0s = m0sout
+		rnips = rnipsout
+		betas = betasout
+		shotsfile = shotsout
+		anglefile = anglesout 
 
 # NIP model setup after velocity model inversion,
 # ray-tracing from acquisition surface to NIP sources

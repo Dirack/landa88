@@ -74,7 +74,7 @@ VFSA disturb parameters step.
 	int i;
 	int nx=nz/(nv-1);
 	// TODO pass max and min values through cmd
-	float minz[2]={0.9,1.75};
+	float minz[2]={0.8,1.75};
 	float maxz[2]={1.3,1.9};
 	float minvel[2]={1.45,1.65};
 	float maxvel[2]={1.55,1.80};
