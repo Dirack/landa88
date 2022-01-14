@@ -60,7 +60,8 @@ int main(int argc, char* argv[])
 	int nsv; // Dimension of sv vector
 	float* mis; // Misfit of the current iteration
 	int itf; // Interface to invert (index)
-	int nx; // Nodepoints for each interface
+	int nx; // NIP sources for each interface
+	int nxsz; // Nodepoints for each interface
 	float ***data; // Prestack data A(m,h,t)
 	int data_n[3]; // n1, n2, n3 dimension of data
 	float data_o[3]; // o1, o2, o3 axis origins of data
@@ -306,6 +307,14 @@ int main(int argc, char* argv[])
 	sf_putint(angles_out,"n3",1);
 	
 	/* Intiate optimal parameters vectors */
+	nx = ns/(nsv-1);
+	nxsz = nsz/(nsv-1);
+	for(q=0;q<(nsv-1);q++){
+		for(im=0;im<nxsz;im++){
+			sz[im+nxsz*q]=s[q*nx][0];
+		}
+	}
+
 	for(im=0;im<nsz;im++)
 		otsz[im]=sz[im];
 	for(im=0;im<nsv;im++)
@@ -314,8 +323,6 @@ int main(int argc, char* argv[])
 	// TODO Next layer's velocity will be the same
 	// in order to avoid interference during inversion
 	sv[itf+1]=sv[itf];
-
-	nx = ns/(nsv-1);
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
 	for (q=0; q<nit; q++){
@@ -337,8 +344,8 @@ int main(int argc, char* argv[])
 		if(fabs(tmis) > fabs(tmis0) ){
 			otmis = fabs(tmis);
 			/* optimized parameters */
-			for(im=0;im<nsz;im++)
-				otsz[im]=cnewz[im];
+			//for(im=0;im<nsz;im++)
+			//	otsz[im]=cnewz[im];
 			for(im=0;im<itf+1;im++)
 				otsv[im]=cnewv[im];
 			//for(im=itf*nx;im<(itf*nx+nx);im++){
@@ -359,16 +366,16 @@ int main(int argc, char* argv[])
 		PM = expf(-deltaE/temp);
 		
 		if (deltaE<=0){
-			for(im=0;im<nsz;im++)
-				sz[im]=cnewz[im];
+			//for(im=0;im<nsz;im++)
+			//	sz[im]=cnewz[im];
 			for(im=0;im<itf+1;im++)
 				sv[im]=cnewv[im];
 			Em0 = -fabs(tmis);
 		} else {
 			u=getRandomNumberBetween0and1();
 			if (PM > u){
-				for(im=0;im<nsz;im++)
-					sz[im]=cnewz[im];
+				//for(im=0;im<nsz;im++)
+				//	sz[im]=cnewz[im];
 				for(im=0;im<itf+1;im++)
 					sv[im]=cnewv[im];
 				Em0 = -fabs(tmis);
@@ -388,6 +395,7 @@ int main(int argc, char* argv[])
 	for(im=0;im<ns;im++)
 		otangles[im]=otbeta[im]*RAD2DEG+180.;
 
+	sf_warning("otsz[0]=%f sz[0]=%f s[0][0]=%f s[0][1]=%f",otsz[0],sz[0],s[0][0],s[0][1]);
 	/* Write velocity cubic spline function */
 	sf_floatwrite(otsv,nsv,vspline);
 	sf_floatwrite(otsz,nsz,zspline);
