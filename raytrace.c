@@ -231,6 +231,7 @@ float calculateInterfaceCurvature(void *par, float x)
 	f1 = f1*f1*f1;
 	kf = f2/(sqrtf(f1));
 
+	//sf_warning("kf=%f",kf);
 	return kf;
 }
 

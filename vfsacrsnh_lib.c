@@ -75,7 +75,7 @@ VFSA disturb parameters step.
 	int nx=nz/(nv-1);
 	// TODO pass max and min values through cmd
 	float minz[2]={0.8,1.75};
-	float maxz[2]={1.3,1.9};
+	float maxz[2]={1.1,1.9};
 	float minvel[2]={1.45,1.65};
 	float maxvel[2]={1.55,1.80};
 
@@ -100,12 +100,13 @@ VFSA disturb parameters step.
 			
 	}
 
+	disturbedVel[0]=1.508;
 	disturbedVel[itf+1]=disturbedVel[itf];
 
 	for(i=0;i<nz;i++)
 		disturbedZ[i]=originalZ[i];
 	
-	for(i=0;i<nx;i++){
+	/*for(i=0;i<nx;i++){
 
 		u=getRandomNumberBetween0and1();
 				
@@ -124,7 +125,29 @@ VFSA disturb parameters step.
 			disturbedZ[i] = (maxz[i/nx]-minz[i/nx]) * getRandomNumberBetween0and1() + minz[i/nx];
 			
 		}
+	}*/
+
+	/*u=getRandomNumberBetween0and1();
+				
+	disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
+
+	disturbedZ[0] = originalZ[0] + (disturbance*scale*10*0.01);
+
+	if (disturbedZ[0] >= maxz[0/nx]) {
+
+		disturbedZ[0] = maxz[0/nx] - (maxz[0/nx]-minz[0/nx]) * getRandomNumberBetween0and1();
+			
 	}
+
+	if (disturbedZ[0] <= minz[0/nx]) {
+
+		disturbedZ[0] = (maxz[0/nx]-minz[0/nx]) * getRandomNumberBetween0and1() + minz[0/nx];
+			
+	}
+
+	for(i=1;i<nx;i++){
+		disturbedZ[i]=disturbedZ[0];
+	}*/
 }
 
 void nonHyperbolicCRSapp(float t[2*mMAX+1][hMAX], float m0, float dm, float om, float dh, float oh, float t0, float v0, float RN, float RNIP, float BETA){
