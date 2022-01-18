@@ -29,14 +29,16 @@ nitf = int(ARGUMENTS.get('nitf',1)) # Number of interfaces
 model = 'model_0' # Constant velocity model
 
 # Fetch dataset
-Fetch(['stackedSection.rsf','parametersCube.rsf','model.jpeg'],
+Fetch(['stackedSection.rsf','parametersCube.rsf'],
 	server="https://github.com/Dirack/dirack.github.io",
 	top="raw/master/data",
-	dir="landa88tomo/model1",
+	dir="landa88tomo/model3",
 	usedatapath=0)
 
 # Traveltime picking
-Flow('pick.txt','stackedSection','ipick')
+Flow('pick1.txt','stackedSection','ipick')
+Flow('pick2.txt','stackedSection','ipick')
+Flow('pick.txt','pick1.txt pick2.txt','/usr/bin/cat $SOURCES')
 
 # Setup files - Build RNIP and BETA parameters files
 # for (t0,m0) pairs in 'pick.txt'
@@ -46,7 +48,7 @@ SConscript('SConscript1')
 xmax = 6.0
 zmax = 4.0
 
-layers = ((1.00,1.20,0.90,1.00),
+layers = ((1.00,1.00,1.00,1.00),
           (1.85,1.85,1.85,1.85))
 
 velocities = (1.508,
@@ -162,8 +164,8 @@ Result('invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
 #layers2 = ((1.2,1.2,1.2,1.2,1.2,1.0,1.0,1.0,0.9,0.9,0.9),
 #	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
 
-layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
-	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
+layers2 = ((1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2),
+	(1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85))
 
 # Nodepoints of the cubic spline velocity function
 Flow('sz_0.asc',None,
@@ -303,7 +305,7 @@ Plot('mod1-img',['mod1','inverted-nipsources'],'Overlay')
 # Plot result: Inverted and original models side by side
 Result('inverted-original',['inverted-interfaces','mod1-img'],'SideBySideIso')
 
-SConscript('SConscript2')
+#SConscript('SConscript2')
 
 Flow('models',models,'rcat axis=3 ${SOURCES[0:%d]}'%(ni*nitf))
 
