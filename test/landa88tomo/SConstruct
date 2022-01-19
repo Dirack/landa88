@@ -36,7 +36,9 @@ Fetch(['stackedSection.rsf','parametersCube.rsf','model.jpeg'],
 	usedatapath=0)
 
 # Traveltime picking
-Flow('pick.txt','stackedSection','ipick')
+Flow('pick1.txt','stackedSection','ipick')
+Flow('pick2.txt','stackedSection','ipick')
+Flow('pick.txt','pick1.txt pick2.txt','/usr/bin/cat $SOURCES')
 
 # Setup files - Build RNIP and BETA parameters files
 # for (t0,m0) pairs in 'pick.txt'
@@ -163,7 +165,7 @@ Result('invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
 #	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
 
 layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
-	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
+	(1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85))
 
 # Nodepoints of the cubic spline velocity function
 Flow('sz_0.asc',None,
