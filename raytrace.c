@@ -367,6 +367,70 @@ Note:
 	return rnip;
 }
 
+void sorting(float *x, float *z, int n)
+/*< TODO >*/
+{
+	int i, im;
+	float tmpx, tmpz;
+
+	for(im=0;im<10;im++){
+		for(i=1;i<n;i++){
+			if(x[i-1]>x[i]){
+				tmpx=x[i-1]; tmpz=z[i-1];
+				x[i-1]=x[i]; z[i-1]=z[i];
+				x[i]=tmpx; z[i]=tmpz;
+			}
+		}
+	}
+}
+
+void interfaceInterpolationFromNipSources(float **s,
+					  int ns,
+					  float *sz,
+					  int nsz,
+					  float osz,
+					  float dsz,
+					  int nsv)
+/*< TODO >*/
+{
+	int nxs=ns/(nsv-1);
+	int nxsz=nsz/(nsv-1);
+	int i, im;
+	float *vx, *vz;
+	float *coef;
+	float xx, oxs, xs;
+	int l=0, k;
+
+	vx = sf_floatalloc(nxs);
+	vz = sf_floatalloc(nxs);
+	coef = sf_floatalloc(4*(nxs-1));
+
+	for(i=0;i<1;i++){
+		for(im=0;im<nxs;im++){
+			vz[im]=s[i*nxs+im][0];
+			vx[im]=s[i*nxs+im][1];
+		}
+		sorting(vx,vz,nxs);
+		calculateSplineCoeficients(nxs,vx,vz,coef);
+		oxs=vx[0];
+		for(im=0;im<nxsz;im++){
+			xx=im*dsz+osz;
+			if(xx<vx[0] || xx>vx[nxs-1]){
+				sz[im]=vz[l];
+			}else{
+				for(k=0;k<5;k++){//TODO
+					if(xx>vx[l+1]){
+						l++;
+						oxs=vx[l];
+					}
+				}
+				xs=xx-oxs;
+				sz[im]=coef[l*4+0]*xs*xs*xs+coef[l*4+1]*xs*xs+coef[l*4+2]*xs+coef[l*4+3];
+			}
+		}
+	}
+}
+
 static int term(void* par, float* y)
 /* grid termination */
 {

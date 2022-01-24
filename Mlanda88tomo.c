@@ -174,6 +174,8 @@ int main(int argc, char* argv[])
 	sf_floatread(sz,nsz,sz_file);
 	sf_floatread(sv,nsv,vz_file);
 
+	interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
+
 	/* VFSA parameters vectors */
 	cnewv = sf_floatalloc(nsv);
 	cnewz = sf_floatalloc(nsz); 

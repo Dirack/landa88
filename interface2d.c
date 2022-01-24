@@ -34,6 +34,7 @@ struct Interface2d{
 };
 /* Concrete data type */
 
+//TODO: correct "coefficients" in the function name
 void calculateSplineCoeficients(int n, /* Vectors (x,y) dimension */
 				float* x, /* x coordinates */
 				float* y, /* y coordinates */
