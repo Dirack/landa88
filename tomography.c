@@ -123,7 +123,7 @@ Note: x is changed inside the function
 	return acos(-x[0]/sqrt(x[0]*x[0]+x[1]*x[1]));
 }
 
-void stackOverCRETimeCurve(
+int stackOverCRETimeCurve(
 			   float RNIP, /* RNIP parameter */
 			   float BETA, /* BETA parameter */
 			   float m0, /* Central CMP */
@@ -177,7 +177,76 @@ Note: sumAmplitudes and sumAmplitudes2 variables are changed inside function
 
 	*sumAmplitudes = sa;
 	*sumAmplitudes2 = sa2;
+
+	return numSamples;
 }
+
+int stackOverCRETimeSurface(
+			   float RNIP, /* RNIP parameter */
+			   float BETA, /* BETA parameter */
+			   float m0, /* Central CMP */
+			   float t0, /* Normal ray traveltime */
+			   float v0, /* Near surface velocity */
+			   float *sumAmplitudes, /* Samples sum */
+			   float *sumAmplitudes2, /* Samples sum squared */
+			   float ***data, /* Seismic data cube */
+			   int *n, /* Data number of samples (n1,n2,n3) */
+			   float *o /* Data axis origins (o1,o2,o3) */,
+			   float *d /* Data samplings (d1,d2,d3) */)
+/*< Calculate CRE trajectory calculation and stack over CRE traveltime surface
+Note: sumAmplitudes and sumAmplitudes2 variables are changed inside function.
+This function returns the number of samples in stack
+>*/
+{
+	float alpha; // Asymetry parameter
+	int ih, im; // Loop counter
+	float h; // Half-offset
+	float m; // CMP
+	int tetai; // Time sample index
+	int numSamples; // Number of time samples to stack
+	float sa=0.; // Samples sum
+	float sa2=0.; // samples sum squared
+	int im0;
+
+	alpha = sinf(BETA)/RNIP;
+
+	im0 = (int) (m0/d[2]);
+
+	for(im=im0-10;im<(im0+11);im++){
+
+		m = im*d[2]+o[2];
+
+		for(ih=0; ih < 25; ih++){
+
+			h = ih*d[1]+o[1];
+
+			/*if(alpha <= 0.001 && alpha >= -0.001){
+				m = m0;
+			}else{
+				m = m0 + (1/(2*alpha)) * (1 - sqrt(1 + 4 * alpha * alpha * h * h));
+			}*/
+
+
+			tetai = (int) ((double) creTimeApproximation(h,m,v0,t0,m0,RNIP,BETA,true)/d[0]);
+
+			if(tetai > n[0] || tetai < 0){
+				sa += 0.;
+			}else{
+				sa += data[im][ih][tetai];
+			}
+
+			sa2 += (sa*sa);
+			numSamples++;
+
+		} /* loop over half-offset */
+	} /* loop over CMP */
+
+	*sumAmplitudes = sa;
+	*sumAmplitudes2 = sa2;
+
+	return numSamples;
+}
+
 
 float calculateTimeMisfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   float v0, /* Near surface velocity */
@@ -234,6 +303,7 @@ sum of t=ts+tr.
 	float *x; // Source position (z,x)
 	float sumAmplitudes=0.; // Amplitudes sum
 	float sumAmplitudes2=0.; // Amplitudes sum squared
+	int numSamples;
 
 	x = sf_floatalloc(2);
 
@@ -268,7 +338,7 @@ sum of t=ts+tr.
 			/* STACKING */
 			sumAmplitudes = 0.;
 			sumAmplitudes2 = 0.;
-			stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
+			numSamples = stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
 
 		}else if(it == 0){ // Ray endpoint inside model
 			t = abs(nt)*dt;
