@@ -65,12 +65,12 @@ int main(int argc, char* argv[])
 	int data_n[3]; // n1, n2, n3 dimension of data
 	float data_o[3]; // o1, o2, o3 axis origins of data
 	float data_d[3]; // d1, d2, d3 sampling of data
-	float *otm0;
-	float **otm02;
-	float *ott0;
-	float *otrnip;
-	float *otbeta;
-	float *otangles;
+	float *otm0; // Normal rays new m0s vector
+	float **otm02; // Normal rays new m0s 2D matrix
+	float *ott0; // Normal rays new t0s
+	float *otrnip; // Optimized RNIP parameter
+	float *otbeta; // Optimized BETA parameter (radians)
+	float *otangles; // Optimized Normal ray angles (degrees)
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -86,12 +86,12 @@ int main(int argc, char* argv[])
 	sf_file misfit; // Misfit of the previous iteration
 	sf_file misinv; // Misfit result of this VFSA iteration
 	sf_file datafile; // Prestack data A(m,h,t)
-	sf_file rnips_out;
-	sf_file betas_out;
-	sf_file angles_out;
-	sf_file t0s_out;
-	sf_file m0s_out;
-	sf_file shots_out;
+	sf_file rnips_out; // Optimized RNIP parameter
+	sf_file betas_out; // Optimized BETA parameter (radians)
+	sf_file angles_out; // Optmized normal ray angles (degrees)
+	sf_file t0s_out; // Normal rays new t0s
+	sf_file m0s_out; // Normal rays new m0s
+	sf_file shots_out; // NIP sources new (z,x) coordinates
 
 	sf_init(argc,argv);
 
@@ -217,7 +217,6 @@ int main(int argc, char* argv[])
 		otbeta[im]=BETA[im];
 	}
 
-
 	/* get slowness squared (Background model) */
 	nm = n[0]*n[1];
 	slow =  sf_floatalloc(nm);
@@ -252,9 +251,7 @@ int main(int argc, char* argv[])
 	/* Use previous misfit as the initial misfit value */
 	mis=sf_floatalloc(1);
 	sf_floatread(mis,1,misfit);
-	// TODO choose the tmis0 first value
 	tmis0=mis[0];
-	//tmis0=100;
 	otmis=tmis0;
 	free(mis);
 
@@ -334,7 +331,7 @@ int main(int argc, char* argv[])
 		tmis=0;
 	
 		/* Calculate time misfit through forward modeling */		
-		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv);
+		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv,nsv);
 
 		if(fabs(tmis) > fabs(tmis0) ){
 			otmis = fabs(tmis);
@@ -343,7 +340,6 @@ int main(int argc, char* argv[])
 				otsz[im]=cnewz[im];
 			for(im=0;im<itf+1;im++)
 				otsv[im]=cnewv[im];
-			//for(im=itf*nx;im<(itf*nx+nx);im++){
 			for(im=0;im<ns;im++){
 				otm0[im]=m0[im];
 				otm02[im][1]=m0[im];

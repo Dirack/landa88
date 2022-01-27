@@ -4,8 +4,6 @@
 	 Purpose: 'Mvfsacrsnh.c' library for raytracing and traveltime
 	 calculation.
 	 	 
-	 Version 1.0
-	 
 	 Site: https://dirack.github.io
 	 
 	 Programmer: Rodolfo A. C. Neves (Dirack) 19/09/2019
@@ -44,8 +42,7 @@ float creTimeApproximation(float h, // Half-offset
 			 )
 /*< Calculate CRE traveltime approximation t(m,h)
 Note: If cds parameter is false, it uses the CRE formula to calculate traveltime.
-If cds parameter is true, it uses the non-hyperbolic CRS formula with CDS condition (RN=RNIP)
-to calculate traveltime.
+If cds parameter is true, it uses the non-hyperbolic CRS formula with CDS condition (RN=RNIP) to calculate traveltime.
 >*/
 { 
 	float alpha; // Asymmetry parameter
@@ -55,13 +52,7 @@ to calculate traveltime.
 	float a1, a2, b2, b1, Fd, Fd1, Fd2; // Non-hyperbolic CRS coefficient
 	float t; // traveltime t(m,h)
 
-	if(!cds){
-		c1 = (d+h)/RNIP;
-		c2 = (d-h)/RNIP;
-		alpha = sin(BETA)/RNIP;
-		t = (t0-2*RNIP/v0)+(RNIP/v0)*sqrt(1-2*alpha*(d+h)+c1*c1)+(RNIP/v0)*sqrt(1-2*alpha*(d-h)+c2*c2);
-	}else{
-
+	if(cds){
 		a1=(2*sin(BETA))/(v0);
 		a2=(2*cos(BETA)*cos(BETA)*t0)/(v0*RNIP);
 		b2=(2*cos(BETA)*cos(BETA)*t0)/(v0*RNIP);
@@ -70,6 +61,11 @@ to calculate traveltime.
 		Fd2=(t0+a1*(d-h))*(t0+a1*(d-h))+a2*(d-h)*(d-h);
 		Fd1=(t0+a1*(d+h))*(t0+a1*(d+h))+a2*(d+h)*(d+h);
 		t=sqrt((Fd+b1*h*h+sqrt(Fd2*Fd1))*0.5);
+	}else{
+		c1 = (d+h)/RNIP;
+		c2 = (d-h)/RNIP;
+		alpha = sin(BETA)/RNIP;
+		t = (t0-2*RNIP/v0)+(RNIP/v0)*sqrt(1-2*alpha*(d+h)+c1*c1)+(RNIP/v0)*sqrt(1-2*alpha*(d-h)+c2*c2);
 	}
 	return t;
 }
@@ -144,7 +140,7 @@ Note: sumAmplitudes and sumAmplitudes2 variables are changed inside function
 	float h; // Half-offset
 	float m; // CMP
 	int tetai; // Time sample index
-	int numSamples; // Number of time samples to stack
+	int numSamples=1; // Number of time samples to stack
 	float sa=0.; // Samples sum
 	float sa2=0.; // samples sum squared
 
@@ -198,17 +194,14 @@ Note: sumAmplitudes and sumAmplitudes2 variables are changed inside function.
 This function returns the number of samples in stack
 >*/
 {
-	float alpha; // Asymetry parameter
 	int ih, im; // Loop counter
 	float h; // Half-offset
 	float m; // CMP
 	int tetai; // Time sample index
-	int numSamples; // Number of time samples to stack
+	int numSamples=1; // Number of time samples to stack
 	float sa=0.; // Samples sum
 	float sa2=0.; // samples sum squared
-	int im0;
-
-	alpha = sinf(BETA)/RNIP;
+	int im0; // Loop counter
 
 	im0 = (int) (m0/d[2]);
 
@@ -219,13 +212,6 @@ This function returns the number of samples in stack
 		for(ih=0; ih < 25; ih++){
 
 			h = ih*d[1]+o[1];
-
-			/*if(alpha <= 0.001 && alpha >= -0.001){
-				m = m0;
-			}else{
-				m = m0 + (1/(2*alpha)) * (1 - sqrt(1 + 4 * alpha * alpha * h * h));
-			}*/
-
 
 			tetai = (int) ((double) creTimeApproximation(h,m,v0,t0,m0,RNIP,BETA,true)/d[0]);
 
@@ -269,7 +255,8 @@ float calculateTimeMisfit(float** s, /* NIP sources matrix (z,x) pairs */
 			   int nsz, /* Number of nodepoints */
 			   float osz, /* Interfaces axis origin */
 			   float dsz, /* Nodepoints sampling */
-			   float *vv /* Layers velocity */)
+			   float *vv, /* Layers velocity */
+			   float nv /* Number of layers */)
 /*< Return L2 norm of the time misfit: The time misfit is the difference
 between the traveltime calculated using raytracing and the traveltime calculated
 with the CRE traveltime formula 
@@ -303,7 +290,7 @@ sum of t=ts+tr.
 	float *x; // Source position (z,x)
 	float sumAmplitudes=0.; // Amplitudes sum
 	float sumAmplitudes2=0.; // Amplitudes sum squared
-	int numSamples;
+	int numSamples=1; // Number of samples
 
 	x = sf_floatalloc(2);
 
@@ -327,7 +314,7 @@ sum of t=ts+tr.
 			t0[is] = 2*it*dt;
 
                         /* Calculate RNIP */
-			RNIP[is] = calculateRNIPWithHubralLaws(rt,traj,it,vv,t0[is],itf,sz,nsz,osz,dsz,ns);
+			RNIP[is] = calculateRNIPWithHubralLaws(rt,traj,it,vv,nv,t0[is],itf,sz,nsz,osz,dsz);
 
 			if(RNIP[is]<0.0)
 				sf_warning("ERROR: RNIP=%f",RNIP[is]);
@@ -338,7 +325,8 @@ sum of t=ts+tr.
 			/* STACKING */
 			sumAmplitudes = 0.;
 			sumAmplitudes2 = 0.;
-			numSamples = stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
+			//numSamples = stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
+			numSamples = stackOverCRETimeSurface(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
 
 		}else if(it == 0){ // Ray endpoint inside model
 			t = abs(nt)*dt;
@@ -354,7 +342,7 @@ sum of t=ts+tr.
 
 	/* L2 norm to evaluate the time misfit */
 	// TODO: Choose the best object function criteria
-	//tmis = (ns)*(sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+	//tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
 	tmis = sumAmplitudes;
 	return tmis;
 }
