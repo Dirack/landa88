@@ -168,13 +168,19 @@ layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
 	(1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85))
 
 # Nodepoints of the cubic spline velocity function
-Flow('sz_0.asc',None,
-	'''
-	echo %s
-	n1=22 d1=1 o1=-2 n2=1 in=$TARGET data_format=ascii_float
-	'''%(' '.join(map(arr2str,layers2))))
+#Flow('sz_0.asc',None,
+#	'''
+#	echo %s
+#	n1=22 d1=1 o1=-2 n2=1 in=$TARGET data_format=ascii_float
+#	'''%(' '.join(map(arr2str,layers2))))
 
-Flow('sz_2','sz_0.asc','dd form=native')
+#Flow('sz_2','sz_0.asc','dd form=native')
+
+Flow('sz_2',None,
+	'''
+	math n1=11 d1=1 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
+	put n2=1 n1=22
+	''')
 
 #Flow('sz_1',None,'math n1=11 d1=1 o1=-2 output="1.8"')
 #Flow('sz_2',['sz_0','sz_1'],
@@ -205,7 +211,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.45,1.72,2.0'))
+	'''%('1.45,1.62,2.0'))
 
 # Initial time misfit for inversion
 Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')
@@ -260,7 +266,7 @@ for j in range(nitf):
 		[model,nipsources,angles,t0s,m0s,
 		rnips,betas,sz,sv,mis,'interpolatedDataCube2'],
 		    '''
-		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
+		    smooth rect1=10 rect2=10 repeat=5 | landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
 		    ''' % (nit,j))
 
 		model = velinv
