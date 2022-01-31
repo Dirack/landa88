@@ -213,7 +213,7 @@ This function returns the number of samples in stack
 
 			h = ih*d[1]+o[1];
 
-			tetai = (int) ((double) creTimeApproximation(h,m,v0,t0,m0,RNIP,BETA,true)/d[0]);
+			tetai = (int) ((double) creTimeApproximation(h,m,v0,t0,m0,RNIP,BETA,false)/d[0]);
 
 			if(tetai > n[0] || tetai < 0){
 				sa += 0.;
