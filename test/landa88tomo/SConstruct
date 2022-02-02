@@ -25,7 +25,7 @@ from rsf.recipes.kimodel import arr2str
 
 ni = int(ARGUMENTS.get('ni',1)) # Number of iterations in inversion loop
 nit = int(ARGUMENTS.get('nit',100)) # Number of iterations in stereoniptomo
-nitf = int(ARGUMENTS.get('nitf',1)) # Number of interfaces
+nitf = int(ARGUMENTS.get('nitf',2)) # Number of interfaces
 model = 'model_0' # Constant velocity model
 
 # Fetch dataset
@@ -211,7 +211,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.45,1.62,2.0'))
+	'''%('1.45,1.72,2.0'))
 
 # Initial time misfit for inversion
 Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')
@@ -282,7 +282,7 @@ for j in range(nitf):
 
 # NIP model setup after velocity model inversion,
 # ray-tracing from acquisition surface to NIP sources
-Flow(['ray2','nipangles2'],[velinv,'shotsfile','anglefile','t0s'],
+Flow(['ray2','nipangles2'],[velinv,shotsout,anglesout,t0sout],
         '''
         nipmodsetup shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} nipangles=${TARGETS[1]} | dd type=complex
         ''')
