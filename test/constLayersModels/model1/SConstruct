@@ -315,10 +315,16 @@ layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
 
 #Flow('sz_2','sz_0.asc','dd form=native')
 
+#Flow('sz_2',None,
+#	'''
+#	math n1=11 d1=1 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
+#	put n2=1 n1=22
+#	''')
+
 Flow('sz_2',None,
 	'''
-	math n1=11 d1=1 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
-	put n2=1 n1=22
+	math n1=21 d1=0.5 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
+	put n2=1 n1=42
 	''')
 
 #Flow('sz_1',None,'math n1=11 d1=1 o1=-2 output="1.8"')
@@ -350,7 +356,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.45,1.62,2.0'))
+	'''%('1.45,1.72,2.0'))
 
 # Initial time misfit for inversion
 Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')

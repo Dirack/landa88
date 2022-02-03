@@ -174,8 +174,11 @@ int main(int argc, char* argv[])
 	sf_floatread(sz,nsz,sz_file);
 	sf_floatread(sv,nsv,vz_file);
 
+	sf_warning("177");
+	//for(im=0;im<nsz;im++) sf_warning("v[%d]=%f",im,sz[im]);
 	interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
-
+	sf_warning("179");
+	//for(im=0;im<nsz;im++) sf_warning("v[%d]=%f",im,sz[im]);
 	/* VFSA parameters vectors */
 	cnewv = sf_floatalloc(nsv);
 	cnewz = sf_floatalloc(nsz); 
@@ -270,8 +273,8 @@ int main(int argc, char* argv[])
 	sf_putint(vspline,"n1",nsv);
 	sf_putint(vspline,"n2",1);
 	sf_putint(zspline,"n1",nsz);
-	sf_putint(zspline,"o1",osz);
-	sf_putint(zspline,"d1",dsz);
+	sf_putfloat(zspline,"o1",osz);
+	sf_putfloat(zspline,"d1",dsz);
 	sf_putint(zspline,"n2",1);
 
 	/* Misfit value */
@@ -383,6 +386,9 @@ int main(int argc, char* argv[])
 	/* Write velocity model file */
 	sf_floatwrite(slow,nm,velinv);
 	
+	//for(im=0;im<nsz;im++) sf_warning("v[%d]=%f",im,sz[im]);
+	//for(im=0;im<n[0];im++) sf_warning("v[%d]=%f",im,slow[im]);
+
 	for(im=0;im<ns;im++)
 		otangles[im]=otbeta[im]*RAD2DEG+180.;
 

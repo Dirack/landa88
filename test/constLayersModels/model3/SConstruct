@@ -68,16 +68,23 @@ Result(trueModel,
 	''')
 
 # Generate a modeled data cube
+nt=1001
+dt=0.004
+nm=241
+dm=0.025
+nh=161
+dh=0.025
+
 kinewmod(reflectors='interfaces',
-	reflectorsDip='interfacesDip',
-	filename=dataCube,
-	velocities=velocities,
-	nt=1001,
-	dt=0.004,
-	ns=241,
-	ds=0.025,
-	nh=161,
-	dh=0.025)
+        reflectorsDip='interfacesDip',
+        filename='multiLayerDataCube',
+        velocities=velocities,
+        nt=nt,
+        dt=dt,
+        ns=nm,
+        ds=dm,
+        nh=nh,
+        dh=dh)
 
 ### PEF interpolation ###
 
@@ -89,14 +96,14 @@ rect1=int(ARGUMENTS.get('rect1',50))
 rect2=int(ARGUMENTS.get('rect2',2))
 
 # Number of offsets to interpolate
-nhi=int(ARGUMENTS.get('nhi',30))
+nhi=int(ARGUMENTS.get('nhi',nh))
 
 pef(dataCube=dataCube,
     interpolated='interpolatedDataCube',
-    nm=241,
-    dm=0.025,
-    nt=1001,
-    dt=0.004,
+    nm=nm,
+    dm=dm,
+    nt=nt,
+    dt=dt,
     nhi=nhi,
     a1=a1,
     a2=a2,
@@ -107,10 +114,10 @@ pef(dataCube=dataCube,
 # to increase the CMP sampling
 pef('interpolatedDataCube',
     interpolatedDataCube,
-    nm=482,
-    dm=0.0125,
-    nt=1001,
-    dt=0.004,
+    nm=2*nm,
+    dm=dm/2.0,
+    nt=nt,
+    dt=dt,
     nhi=nhi,
     a1=a1,
     a2=a2,
@@ -135,7 +142,7 @@ cds = bool(ARGUMENTS.get('cds',False))
 
 Flow(parametersCube,interpolatedDataCube,
         '''
-        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=2 verb=y
+        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=5 verb=y
         '''%(nm0,om0,dm0,nt0,ot0,dt0,v0))
 
 Flow('creTrajectories',[interpolatedDataCube,parametersCube],
@@ -279,7 +286,7 @@ Plot('inverted-nipsourcesgz','raygz','sfgraph scalebar=y symbol=+ transp=y yreve
 Plot('inverted-interfacesgz',['velocityModelgz','inverted-nipsourcesgz'],'Overlay')
 
 # Plot original velocity model
-Plot('mod1gz','mod1',
+Plot('mod1gz',trueModel,
 	'''
 	put label1=Depth unit1=Km label2=Position unit2=Km |
 	grey color=j scalebar=y barreverse=y bias=1.508 title="Original velocity model" barlabel="Velocity" barunit="Km/s" min1=0 max1=3 min2=1 max2=5
@@ -296,8 +303,8 @@ Result('invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
 #layers2 = ((1.2,1.2,1.2,1.2,1.2,1.0,1.0,1.0,0.9,0.9,0.9),
 #	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
 
-layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
-	(1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85))
+layers2 = ((1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2),
+	(1.55,1.55,1.55,1.55,1.55,1.55,1.55,1.55,1.55,1.55,1.55))
 
 # Nodepoints of the cubic spline velocity function
 #Flow('sz_0.asc',None,
@@ -343,7 +350,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.45,1.62,2.0'))
+	'''%('1.45,1.72,2.0'))
 
 # Initial time misfit for inversion
 Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')
@@ -398,7 +405,7 @@ for j in range(nitf):
 		[model,nipsources,angles,t0s,m0s,
 		rnips,betas,sz,sv,mis,interpolatedDataCube],
 		    '''
-		    smooth rect1=10 rect2=10 repeat=5 | landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
 		    ''' % (nit,j))
 
 		model = velinv
@@ -414,7 +421,7 @@ for j in range(nitf):
 
 # NIP model setup after velocity model inversion,
 # ray-tracing from acquisition surface to NIP sources
-Flow(['ray2','nipangles2'],[velinv,'shotsfile','anglefile','t0s'],
+Flow(['ray2','nipangles2'],[velinv,shotsout,anglesout,t0sout],
         '''
         nipmodsetup shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} nipangles=${TARGETS[1]} | dd type=complex
         ''')
