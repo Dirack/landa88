@@ -115,8 +115,13 @@ float calculateBetaWithRayTrajectory(
 Note: x is changed inside the function
 >*/
 {
+	float xx;
+
 	calculateEscapeVector(x,traj,it);
-	return acos(-x[0]/sqrt(x[0]*x[0]+x[1]*x[1]));
+	xx=sqrt(x[0]*x[0]+x[1]*x[1]);
+	xx=acos(-x[0]/xx);
+	sf_warning("xx=%f",xx);
+	return xx;
 }
 
 int stackOverCRETimeCurve(
@@ -321,6 +326,7 @@ sum of t=ts+tr.
 
 			/* Calculate BETA */
 			BETA[is] = calculateBetaWithRayTrajectory(x,traj,it);
+			sf_warning("beta=%f %d",BETA[is],is);
 
 			/* STACKING */
 			sumAmplitudes = 0.;
@@ -337,7 +343,7 @@ sum of t=ts+tr.
 
 	} /* Loop over NIP sources */
 
-	raytrace_close(rt);
+	//raytrace_close(rt);
 	free(traj);
 
 	/* L2 norm to evaluate the time misfit */

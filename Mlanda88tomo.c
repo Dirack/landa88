@@ -391,6 +391,8 @@ int main(int argc, char* argv[])
 
 	for(im=0;im<ns;im++)
 		otangles[im]=otbeta[im]*RAD2DEG+180.;
+	//for(im=0;im<ns;im++) sf_warning("b[%d]=%f",im,otbeta[im]);
+	//for(im=0;im<ns;im++) sf_warning("a[%d]=%f",im,otangles[im]);
 
 	/* Write velocity cubic spline function */
 	sf_floatwrite(otsv,nsv,vspline);
