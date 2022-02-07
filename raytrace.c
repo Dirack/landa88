@@ -352,10 +352,11 @@ float calculateRNIPWithHubralLaws(
 
 		/* If the ray reaches interface use transmission law */
 		if(vt!=vi){
-			for(j=0;j<nsz/3;j++){
-				szz[j]=sz[j+((itf-1)*nsz/3)];
+			// TODO: This loop could be outside this if?
+			for(j=0;j<nsz/(nv-1);j++){
+				szz[j]=sz[j+((itf-1)*nsz/(nv-1))];
 			}
-			interface = itf2d_init(szz,nsz/3,osz,dsz);
+			interface = itf2d_init(szz,nsz/(nv-1),osz,dsz);
 			transmitedRNIPThroughInterface(rt,interface,&i,traj,&rnip);
 			vi=vt;
 		}
