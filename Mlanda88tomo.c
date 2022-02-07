@@ -174,11 +174,8 @@ int main(int argc, char* argv[])
 	sf_floatread(sz,nsz,sz_file);
 	sf_floatread(sv,nsv,vz_file);
 
-	sf_warning("177");
-	//for(im=0;im<nsz;im++) sf_warning("v[%d]=%f",im,sz[im]);
 	interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
-	sf_warning("179");
-	//for(im=0;im<nsz;im++) sf_warning("v[%d]=%f",im,sz[im]);
+
 	/* VFSA parameters vectors */
 	cnewv = sf_floatalloc(nsv);
 	cnewz = sf_floatalloc(nsz); 
@@ -282,27 +279,32 @@ int main(int argc, char* argv[])
 	sf_putint(misinv,"n2",1);
 	sf_putint(misinv,"n3",1);
 
-	/**/
+	/* t0s values */
 	sf_putint(t0s_out,"n1",ns);
 	sf_putint(t0s_out,"n2",1);
 	sf_putint(t0s_out,"n3",1);
 
+	/* m0s values */
 	sf_putint(m0s_out,"n1",ns);
 	sf_putint(m0s_out,"n2",1);
 	sf_putint(m0s_out,"n3",1);
 
+	/* shotsfiles out */
 	sf_putint(shots_out,"n1",2);
 	sf_putint(shots_out,"n2",ns);
 	sf_putint(shots_out,"n3",1);
 
+	/* RNIPs parameters out */
 	sf_putint(rnips_out,"n1",ns);
 	sf_putint(rnips_out,"n2",1);
 	sf_putint(rnips_out,"n3",1);
 
+	/* BETAs parameters out (Radians) */
 	sf_putint(betas_out,"n1",ns);
 	sf_putint(betas_out,"n2",1);
 	sf_putint(betas_out,"n3",1);
 
+	/* BETAS parameters out (Degrees) */
 	sf_putint(angles_out,"n1",ns);
 	sf_putint(angles_out,"n2",1);
 	sf_putint(angles_out,"n3",1);
@@ -386,13 +388,8 @@ int main(int argc, char* argv[])
 	/* Write velocity model file */
 	sf_floatwrite(slow,nm,velinv);
 	
-	//for(im=0;im<nsz;im++) sf_warning("v[%d]=%f",im,sz[im]);
-	//for(im=0;im<n[0];im++) sf_warning("v[%d]=%f",im,slow[im]);
-
 	for(im=0;im<ns;im++)
 		otangles[im]=otbeta[im]*RAD2DEG+180.;
-	//for(im=0;im<ns;im++) sf_warning("b[%d]=%f",im,otbeta[im]);
-	//for(im=0;im<ns;im++) sf_warning("a[%d]=%f",im,otangles[im]);
 
 	/* Write velocity cubic spline function */
 	sf_floatwrite(otsv,nsv,vspline);

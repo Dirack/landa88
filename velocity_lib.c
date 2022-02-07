@@ -105,12 +105,9 @@ they are interpolated using natural cubic spline interpolation.
 
 	x = sf_floatalloc(nx);
 	szz = sf_floatalloc(nx);
-//dsz=0.5;
+
 	for(i=0;i<nx;i++)
 		x[i] = i*dsz+osz;
-
-	//for(i=0;i<nx;i++) sf_warning("x[%d]=%f %f %f",i,x[i],dsz,osz);
-	//sf_error("deu");
 
 	/* Calculate coefficients matrix (interfaces interpolation) */
 	coef = sf_floatalloc2(4*(nx-1),nsv-1);
@@ -134,11 +131,7 @@ they are interpolated using natural cubic spline interpolation.
 			z = i*d[0]+o[0];
 			if(z>zi[k]) k++;
 			vel[n[0]*j+i] = sv[k];
-			//sf_warning("v[%d]=%f xx=%f xl=%f xl1=%f l=%d",i,vel[n[0]*j+i],xx,x[l],x[l+1],l);
-			//if(l>=20) sf_error("capa");
                 } /* Loop over depth */
-		//sf_error("capa");
-
 	} /* Loop over distance */
 
 	free(x);

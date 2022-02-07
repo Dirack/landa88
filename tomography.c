@@ -31,6 +31,10 @@
 #endif
 /*^*/
 
+#define OFFSET_APERTURE 25
+#define CMP_APERTURE 10
+/*^*/
+
 float creTimeApproximation(float h, // Half-offset
 			 float m, // CMP
 			 float v0, // Near surface velocity
@@ -120,7 +124,6 @@ Note: x is changed inside the function
 	calculateEscapeVector(x,traj,it);
 	xx=sqrt(x[0]*x[0]+x[1]*x[1]);
 	xx=acos(-x[0]/xx);
-	sf_warning("xx=%f",xx);
 	return xx;
 }
 
@@ -151,7 +154,7 @@ Note: sumAmplitudes and sumAmplitudes2 variables are changed inside function
 
 	alpha = sinf(BETA)/RNIP;
 
-	for(ih=0; ih < 25; ih++){
+	for(ih=0; ih < OFFSET_APERTURE; ih++){
 
 		h = ih*d[1]+o[1];
 
@@ -210,11 +213,11 @@ This function returns the number of samples in stack
 
 	im0 = (int) (m0/d[2]);
 
-	for(im=im0-10;im<(im0+11);im++){
+	for(im=im0-CMP_APERTURE;im<(im0+CMP_APERTURE+1);im++){
 
 		m = im*d[2]+o[2];
 
-		for(ih=0; ih < 25; ih++){
+		for(ih=0; ih < OFFSET_APERTURE; ih++){
 
 			h = ih*d[1]+o[1];
 
@@ -326,13 +329,15 @@ sum of t=ts+tr.
 
 			/* Calculate BETA */
 			BETA[is] = calculateBetaWithRayTrajectory(x,traj,it);
-			sf_warning("beta=%f %d",BETA[is],is);
 
 			/* STACKING */
 			sumAmplitudes = 0.;
 			sumAmplitudes2 = 0.;
-			//numSamples = stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
+			#ifdef CRE_TIME_CURVE
+			numSamples = stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
+			#else
 			numSamples = stackOverCRETimeSurface(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
+			#endif
 
 		}else if(it == 0){ // Ray endpoint inside model
 			t = abs(nt)*dt;
@@ -343,13 +348,15 @@ sum of t=ts+tr.
 
 	} /* Loop over NIP sources */
 
-	//raytrace_close(rt);
 	free(traj);
 
 	/* L2 norm to evaluate the time misfit */
 	// TODO: Choose the best object function criteria
-	//tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+	#ifdef SEMBLANCE
+	tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+	#else
 	tmis = sumAmplitudes;
+	#endif
 	return tmis;
 }
 

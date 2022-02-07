@@ -62,7 +62,7 @@ void disturbParameters( float temperature, /* Temperature of this interation in 
 			float* originalZ, /* original parameters vector */
 			int nz, /*Number of parameters */
 			float scale /* Scale to multiply by disturbance */,
-			int itf)
+			int itf /* Current interface */)
 /*< Disturb parameters from the previous iteration of VFSA
  Note: It receives a parameter vector and distubs it accordingly to 
 VFSA disturb parameters step.
@@ -72,10 +72,11 @@ VFSA disturb parameters step.
 	float u;
 	float disturbance;
 	int i;
-	int nx=nz/(nv-1);
 	// TODO pass max and min values through cmd
+	#ifdef DISTURB_INTERFACES
 	float minz[2]={0.8,1.75};
 	float maxz[2]={1.3,1.9};
+	#endif
 	float minvel[3]={1.45,1.65,1.73};
 	float maxvel[3]={1.55,1.73,1.8};
 
@@ -88,18 +89,11 @@ VFSA disturb parameters step.
 
 	disturbedVel[itf] = originalVel[itf] + (disturbance*scale*10) * (0.1);
 
-	if (disturbedVel[itf] >= maxvel[itf]) {
-
+	if (disturbedVel[itf] >= maxvel[itf])
 		disturbedVel[itf] = maxvel[itf] - (maxvel[itf]-minvel[itf]) * getRandomNumberBetween0and1();
-		//sf_warning("capa v=%f",disturbedVel[itf]);
-			
-	}
 
-	if (disturbedVel[itf] <= minvel[itf]) {
-
+	if (disturbedVel[itf] <= minvel[itf])
 		disturbedVel[itf] = (maxvel[itf]-minvel[itf]) * getRandomNumberBetween0and1() + minvel[itf];
-			
-	}
 
 	disturbedVel[0]=1.508;
 	disturbedVel[itf+1]=disturbedVel[itf];
@@ -107,7 +101,8 @@ VFSA disturb parameters step.
 	for(i=0;i<nz;i++)
 		disturbedZ[i]=originalZ[i];
 	
-	/*for(i=0;i<nx;i++){
+	#ifdef DISTURB_INTERFACES
+	for(i=0;i<nx;i++){
 
 		u=getRandomNumberBetween0and1();
 				
@@ -126,7 +121,8 @@ VFSA disturb parameters step.
 			disturbedZ[i] = (maxz[i/nx]-minz[i/nx]) * getRandomNumberBetween0and1() + minz[i/nx];
 			
 		}
-	}*/
+	}
+	#endif
 }
 
 void nonHyperbolicCRSapp(float t[2*mMAX+1][hMAX], float m0, float dm, float om, float dh, float oh, float t0, float v0, float RN, float RNIP, float BETA){
