@@ -14,6 +14,8 @@ The time misfit is calculated by the difference between the reflection traveltim
 #include "vfsacrsnh_lib.h"
 #include "velocity_lib.h"
 
+#define RAD2DEG 180./SF_PI
+
 int main(int argc, char* argv[])
 {
 	bool verb; // Verbose parameter
@@ -58,6 +60,17 @@ int main(int argc, char* argv[])
 	int nsv; // Dimension of sv vector
 	float* mis; // Misfit of the current iteration
 	int itf; // Interface to invert (index)
+	int nx; // Nodepoints for each interface
+	float ***data; // Prestack data A(m,h,t)
+	int data_n[3]; // n1, n2, n3 dimension of data
+	float data_o[3]; // o1, o2, o3 axis origins of data
+	float data_d[3]; // d1, d2, d3 sampling of data
+	float *otm0; // Normal rays new m0s vector
+	float **otm02; // Normal rays new m0s 2D matrix
+	float *ott0; // Normal rays new t0s
+	float *otrnip; // Optimized RNIP parameter
+	float *otbeta; // Optimized BETA parameter (radians)
+	float *otangles; // Optimized Normal ray angles (degrees)
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -72,6 +85,13 @@ int main(int argc, char* argv[])
 	sf_file zspline; // Interfaces spline nodes 
 	sf_file misfit; // Misfit of the previous iteration
 	sf_file misinv; // Misfit result of this VFSA iteration
+	sf_file datafile; // Prestack data A(m,h,t)
+	sf_file rnips_out; // Optimized RNIP parameter
+	sf_file betas_out; // Optimized BETA parameter (radians)
+	sf_file angles_out; // Optmized normal ray angles (degrees)
+	sf_file t0s_out; // Normal rays new t0s
+	sf_file m0s_out; // Normal rays new m0s
+	sf_file shots_out; // NIP sources new (z,x) coordinates
 
 	sf_init(argc,argv);
 
@@ -89,6 +109,13 @@ int main(int argc, char* argv[])
 	vz_file = sf_input("vz");
 	misfit = sf_input("misfit");
 	misinv = sf_output("misinv");
+	datafile = sf_input("data");
+	rnips_out = sf_output("rnipsout");
+	betas_out = sf_output("betasout");
+	angles_out = sf_output("anglesout");
+	t0s_out = sf_output("t0sout");
+	m0s_out = sf_output("m0sout");
+	shots_out = sf_output("shotsout");
 
 	/* Velocity model: get 2D grid parameters */
 	if(!sf_histint(vel,"n1",n)) sf_error("No n1= in input");
@@ -97,6 +124,17 @@ int main(int argc, char* argv[])
 	if(!sf_histfloat(vel,"d2",d+1)) sf_error("No d2= in input");
 	if(!sf_histfloat(vel,"o1",o)) o[0]=0.;
 	if(!sf_histfloat(vel,"o2",o+1)) o[1]=0.;
+
+	/* Prestack data cube */
+	if(!sf_histint(datafile,"n1",data_n)) sf_error("No n1= in data");
+	if(!sf_histint(datafile,"n2",data_n+1)) sf_error("No n2= in data");
+	if(!sf_histint(datafile,"n3",data_n+2)) sf_error("No n3= in data");
+	if(!sf_histfloat(datafile,"d1",data_d)) sf_error("No d1= in data");
+	if(!sf_histfloat(datafile,"d2",data_d+1)) sf_error("No d2= in data");
+	if(!sf_histfloat(datafile,"d3",data_d+2)) sf_error("No d3= in data");
+	if(!sf_histfloat(datafile,"o1",data_o)) sf_error("No o1= in data");
+	if(!sf_histfloat(datafile,"o2",data_o+1)) sf_error("No o2= in data");
+	if(!sf_histfloat(datafile,"o3",data_o+2)) sf_error("No o3= in data");
 	
 	if(!sf_getbool("verb",&verb)) verb=true;
 	/* verbose parameter (y/n) */
@@ -136,11 +174,17 @@ int main(int argc, char* argv[])
 	sf_floatread(sz,nsz,sz_file);
 	sf_floatread(sv,nsv,vz_file);
 
+	interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
+
 	/* VFSA parameters vectors */
 	cnewv = sf_floatalloc(nsv);
 	cnewz = sf_floatalloc(nsz); 
 	otsv = sf_floatalloc(nsv);
 	otsz = sf_floatalloc(nsz);
+
+	/* Read prestack data cube */
+	data = sf_floatalloc3(data_n[0],data_n[1],data_n[2]);
+	sf_floatread(data[0][0],data_n[0]*data_n[1]*data_n[2],datafile);
 
 	/* Anglefile: get initial emergence angle */
 	if(!sf_histint(angles,"n1",&ns)) sf_error("No n1= in anglefile");
@@ -150,13 +194,28 @@ int main(int argc, char* argv[])
 
 	/* allocate parameters vectors */
 	m0 = sf_floatalloc(ns);
+	otm0 = sf_floatalloc(ns);
+	otm02 = sf_floatalloc2(2,ns);
 	sf_floatread(m0,ns,m0s);
 	t0 = sf_floatalloc(ns);
+	ott0 = sf_floatalloc(ns);
 	sf_floatread(t0,ns,t0s);
 	RNIP = sf_floatalloc(ns);
+	otrnip = sf_floatalloc(ns);
 	sf_floatread(RNIP,ns,rnips);
 	BETA = sf_floatalloc(ns);
+	otbeta = sf_floatalloc(ns);
+	otangles = sf_floatalloc(ns);
 	sf_floatread(BETA,ns,betas);
+
+	for(im=0;im<ns;im++){
+		otm0[im]=m0[im];
+		otm02[im][0]=0.;
+		otm02[im][1]=m0[im];
+		ott0[im]=t0[im];
+		otrnip[im]=RNIP[im];
+		otbeta[im]=BETA[im];
+	}
 
 	/* get slowness squared (Background model) */
 	nm = n[0]*n[1];
@@ -174,6 +233,10 @@ int main(int argc, char* argv[])
 		sf_warning("Input file (Velocity model)");
 		sf_warning("n1=%d d1=%f o1=%f",*n,*d,*o);
 		sf_warning("n2=%d d2=%f o2=%f",*(n+1),*(d+1),*(o+1));
+		sf_warning("Input file (Prestack data)");
+		sf_warning("n1=%d d1=%f o1=%f",*data_n,*data_d,*data_o);
+		sf_warning("n2=%d d2=%f o2=%f",*(data_n+1),*(data_d+1),*(data_o+1));
+		sf_warning("n3=%d d3=%f o3=%f",*(data_n+2),*(data_d+2),*(data_o+2));
 		sf_warning("Input file (shotsfile)");
 		sf_warning("n1=%d",ndim);
 		sf_warning("n2=%d",nshot);
@@ -188,9 +251,7 @@ int main(int argc, char* argv[])
 	/* Use previous misfit as the initial misfit value */
 	mis=sf_floatalloc(1);
 	sf_floatread(mis,1,misfit);
-	// TODO choose the tmis0 first value
 	tmis0=mis[0];
-	//tmis0=100;
 	otmis=tmis0;
 	free(mis);
 
@@ -209,14 +270,44 @@ int main(int argc, char* argv[])
 	sf_putint(vspline,"n1",nsv);
 	sf_putint(vspline,"n2",1);
 	sf_putint(zspline,"n1",nsz);
-	sf_putint(zspline,"o1",osz);
-	sf_putint(zspline,"d1",dsz);
+	sf_putfloat(zspline,"o1",osz);
+	sf_putfloat(zspline,"d1",dsz);
 	sf_putint(zspline,"n2",1);
 
 	/* Misfit value */
 	sf_putint(misinv,"n1",1);
 	sf_putint(misinv,"n2",1);
 	sf_putint(misinv,"n3",1);
+
+	/* t0s values */
+	sf_putint(t0s_out,"n1",ns);
+	sf_putint(t0s_out,"n2",1);
+	sf_putint(t0s_out,"n3",1);
+
+	/* m0s values */
+	sf_putint(m0s_out,"n1",ns);
+	sf_putint(m0s_out,"n2",1);
+	sf_putint(m0s_out,"n3",1);
+
+	/* shotsfiles out */
+	sf_putint(shots_out,"n1",2);
+	sf_putint(shots_out,"n2",ns);
+	sf_putint(shots_out,"n3",1);
+
+	/* RNIPs parameters out */
+	sf_putint(rnips_out,"n1",ns);
+	sf_putint(rnips_out,"n2",1);
+	sf_putint(rnips_out,"n3",1);
+
+	/* BETAs parameters out (Radians) */
+	sf_putint(betas_out,"n1",ns);
+	sf_putint(betas_out,"n2",1);
+	sf_putint(betas_out,"n3",1);
+
+	/* BETAS parameters out (Degrees) */
+	sf_putint(angles_out,"n1",ns);
+	sf_putint(angles_out,"n2",1);
+	sf_putint(angles_out,"n3",1);
 	
 	/* Intiate optimal parameters vectors */
 	for(im=0;im<nsz;im++)
@@ -227,6 +318,8 @@ int main(int argc, char* argv[])
 	// TODO Next layer's velocity will be the same
 	// in order to avoid interference during inversion
 	sv[itf+1]=sv[itf];
+
+	nx = ns/(nsv-1);
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
 	for (q=0; q<nit; q++){
@@ -243,16 +336,22 @@ int main(int argc, char* argv[])
 		tmis=0;
 	
 		/* Calculate time misfit through forward modeling */		
-		tmis=calculateTimeMisfit(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,ns/(nsv-1),itf);
-		tmis+=calculateLocationMisfit(s,cnewz,nsz/(nsv-1),osz,dsz,nshot,itf);
+		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv,nsv);
 
-		if(fabs(tmis) < fabs(tmis0) ){
+		if(fabs(tmis) > fabs(tmis0) ){
 			otmis = fabs(tmis);
 			/* optimized parameters */
 			for(im=0;im<nsz;im++)
 				otsz[im]=cnewz[im];
 			for(im=0;im<itf+1;im++)
 				otsv[im]=cnewv[im];
+			for(im=0;im<ns;im++){
+				otm0[im]=m0[im];
+				otm02[im][1]=m0[im];
+				ott0[im]=t0[im];
+				otrnip[im]=RNIP[im];
+				otbeta[im]=BETA[im];
+			}
 			tmis0 = fabs(tmis);
 		}
 
@@ -279,7 +378,7 @@ int main(int argc, char* argv[])
 			}	
 		}	
 			
-		sf_warning("%d/%d => (%f)",q+1,nit,otmis);
+		sf_warning("%d/%d interface=%d => Semblance(%f);",q+1,nit,itf,otmis);
 
 	} /* loop over VFSA iterations */
 
@@ -288,9 +387,19 @@ int main(int argc, char* argv[])
 
 	/* Write velocity model file */
 	sf_floatwrite(slow,nm,velinv);
+	
+	for(im=0;im<ns;im++)
+		otangles[im]=otbeta[im]*RAD2DEG+180.;
 
 	/* Write velocity cubic spline function */
 	sf_floatwrite(otsv,nsv,vspline);
 	sf_floatwrite(otsz,nsz,zspline);
 	sf_floatwrite(&otmis,1,misinv);
+	sf_floatwrite(ott0,ns,t0s_out);
+	sf_floatwrite(otm0,ns,m0s_out);
+	sf_floatwrite(otm02[0],2*ns,shots_out);
+	sf_floatwrite(otrnip,ns,rnips_out);
+	sf_floatwrite(otbeta,ns,betas_out);
+	sf_floatwrite(otangles,ns,angles_out);
+
 }

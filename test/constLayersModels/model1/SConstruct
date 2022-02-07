@@ -1,48 +1,41 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# SConstruct (Python)
+# SConstruct (Python3)
 # 
-# Purpose: Test sflanda88tomo in a layers constant velocity model
-# with picked (t0,m0) pairs.
+# Purpose: Full velocity inversion with NIP tomography.
+# Velocity model with plane interfaces.
 # 
 # Site: https://dirack.github.io
 # 
 # Version 1.0
 # 
-# Programmer: Rodolfo A C Neves (Dirack) 07/02/2021
+# Programmer: Rodolfo A C Neves (Dirack) 31/01/2022
 # 
 # Email: rodolfo_profissional@hotmail.com
 # 
 # License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
-# Madagascar package
+# Madagascar Package
 from rsf.proj import *
 
-# Recipes
+# Madagascar Recipes
+from rsf.recipes.pefInterpolation import pefInterpolation as pef
 from rsf.recipes.kimodel import multiLayerModel as mlmod
+from rsf.recipes.kimodel import kirchhoffNewtonModeling as kinewmod
 from rsf.recipes.kimodel import arr2str
 
-ni = int(ARGUMENTS.get('ni',1)) # Number of iterations in inversion loop
-nit = int(ARGUMENTS.get('nit',100)) # Number of iterations in stereoniptomo
-nitf = int(ARGUMENTS.get('nitf',2)) # Number of interfaces
-model = 'model_0' # Constant velocity model
+# Main Files
+trueModel='trueModel'
+stackedSection='stackedSection'
+parametersCube='parametersCube'
+dataCube='multiLayerDataCube'
+interpolatedDataCube='interpolatedDataCube2'
 
-# Fetch dataset
-Fetch(['stackedSection.rsf','parametersCube.rsf','model.jpeg'],
-	server="https://github.com/Dirack/dirack.github.io",
-	top="raw/master/data",
-	dir="landa88tomo/model1",
-	usedatapath=0)
-
-# Traveltime picking
-Flow('pick1.txt','stackedSection','ipick')
-Flow('pick2.txt','stackedSection','ipick')
-Flow('pick.txt','pick1.txt pick2.txt','/usr/bin/cat $SOURCES')
-
-# Setup files - Build RNIP and BETA parameters files
-# for (t0,m0) pairs in 'pick.txt'
-SConscript('SConscript1')
+# Establish building dependencies
+Depends('interpolatedDataCube.rsf','multiLayerDataCube.rsf')
+Depends('interpolatedDataCube2.rsf','interpolatedDataCube.rsf')
+Depends('crsParameters-m0-0-t0-0.rsf','interpolatedDataCube2.rsf')
 
 # Original velocity model
 xmax = 6.0
@@ -55,27 +48,173 @@ velocities = (1.508,
               1.690,
               2.0)
 
-# Generate multi layers model
+### Modeling ###
+
+# Generate multi layer model
 mlmod(interfaces='interfaces',
         dipsfile='interfacesDip',
-        modelfile='mod1',
+        modelfile=trueModel,
         xmax=xmax,
         zmax=zmax,
         layers=layers,
         velocities=velocities)
 
-# Generate interfaces files to plot with viewNipSources.py
-Flow('modelin1.txt','interfaces',
-        '''
-        window n2=1 f2=0 |
-        disfil format="%f " number=n col=1
-        ''')
+# plot the original velocity model
+Result(trueModel,
+	'''
+	grey color=j scalebar=y label1=Depth unit1=km
+	label2=Position unit2=km barlabel=Velocity barunit=km/s
+	barreverse=y title="Velocity Model - Plane Interfaces" allpos=yi bias=1.0
+	''')
 
-Flow('modelin2.txt','interfaces',
+# Generate a modeled data cube
+nt=1001
+dt=0.004
+nm=241
+dm=0.025
+nh=161
+dh=0.025
+
+kinewmod(reflectors='interfaces',
+        reflectorsDip='interfacesDip',
+        filename='multiLayerDataCube',
+        velocities=velocities,
+        nt=nt,
+        dt=dt,
+        ns=nm,
+        ds=dm,
+        nh=nh,
+        dh=dh)
+
+### PEF interpolation ###
+
+# Use default value or pass through command line
+# PEF coeficients and PEF Smooth radius
+a1=int(ARGUMENTS.get('a1',10))
+a2=int(ARGUMENTS.get('a2',2))
+rect1=int(ARGUMENTS.get('rect1',50))
+rect2=int(ARGUMENTS.get('rect2',2))
+
+# Number of offsets to interpolate
+nhi=int(ARGUMENTS.get('nhi',nh))
+
+pef(dataCube=dataCube,
+    interpolated='interpolatedDataCube',
+    nm=nm,
+    dm=dm,
+    nt=nt,
+    dt=dt,
+    nhi=nhi,
+    a1=a1,
+    a2=a2,
+    rect1=rect1,
+    rect2=rect2)
+
+# Do the PEF interpolation one more time
+# to increase the CMP sampling
+pef('interpolatedDataCube',
+    interpolatedDataCube,
+    nm=2*nm,
+    dm=dm/2.0,
+    nt=nt,
+    dt=dt,
+    nhi=nhi,
+    a1=a1,
+    a2=a2,
+    rect1=rect1,
+    rect2=rect2)
+
+### VFSA and CRE Stacking ####
+
+# It uses Very Fast Simulated Aneeling and non hyperbolic CRS
+# to get zero offset CRS parameters (RN, RNIP and BETA) from interpolated data cube
+
+# VFSA Parameters
+v0 = float(ARGUMENTS.get('v0',1.5))
+ot0 = float(ARGUMENTS.get('ot0',1.0))
+dt0 = float(ARGUMENTS.get('dt0',0.008))
+nt0 = int(ARGUMENTS.get('nt0',251))
+om0 = float(ARGUMENTS.get('om0',1.5))
+dm0 = float(ARGUMENTS.get('dm0',0.025))
+nm0 = int(ARGUMENTS.get('nm0',121))
+aperture = int(ARGUMENTS.get('aperture',30))
+cds = bool(ARGUMENTS.get('cds',False))
+
+Flow(parametersCube,interpolatedDataCube,
         '''
-        window n2=1 f2=1 |
-        disfil format="%f " number=n col=1
-        ''')
+        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=5 verb=y
+        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0))
+
+Flow('creTrajectories',[interpolatedDataCube,parametersCube],
+        '''
+        cretrajec param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y 
+        '''%(nm0,om0,dm0,nt0,ot0,dt0))
+
+Flow(['cregathers','mhCoordinates'],[interpolatedDataCube,'creTrajectories'],
+        '''
+        getcregather cremh=${SOURCES[1]} m=${TARGETS[1]} aperture=%d nm0=%g nt0=%g |
+        put label1=Time unit1=s label2=Offset unit2=Km label3=t0 unit3=s
+        label4=m0 unit4=Km n3=%d d3=%g o3=%g n4=%d d4=%g o4=%g
+        ''' % (aperture,nm0,nt0,nt0,dt0,ot0,nm0,dm0,om0))
+
+Flow('cretimecurves',['mhCoordinates',parametersCube],
+        '''
+        getcretimecurve param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y v0=%g |
+        put label1=Offset unit1=Km label2=t0 unit2=s label3=m0 unit3=Km
+        n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,nt0,dt0,ot0,nm0,dm0,om0))
+
+Flow('parametersCube2',parametersCube,
+	'''
+	put label2=t0 label3=m0 unit2=Km unit3=Km
+	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+	'''%(nt0,dt0,ot0,nm0,dm0,om0))
+
+parametersCube='parametersCube2'
+
+Flow(stackedSection,['cregathers','cretimecurves'],
+        '''
+        crestack aperture=%d verb=y timeCurves=${SOURCES[1]} |
+        put label1=t0 unit1=s label2=m0 unit2=Km
+        ''' %(aperture))
+
+Result(stackedSection,
+	'''
+	grey title="Stacked Section"
+	''')
+
+### velocity inversion using NIP tomography ###
+
+ni = int(ARGUMENTS.get('ni',1)) # Number of iterations in inversion loop
+nit = int(ARGUMENTS.get('nit',100)) # Number of iterations in tomography
+nitf = int(ARGUMENTS.get('nitf',2)) # Number of interfaces
+model = 'model_0' # Constant velocity model
+
+# Traveltime picking
+Flow('pick1.txt',stackedSection,'ipick')
+Flow('pick2.txt',stackedSection,'ipick')
+Flow('pick.txt','pick1.txt pick2.txt','/usr/bin/cat $SOURCES')
+
+files=['t0s','m0s']
+i=1
+for f in files:
+	Flow(f+'.asc','pick.txt',
+	'''
+	./ascFormat.sh ${TARGETS} %d
+	'''%i)
+
+	Flow(f,f+'.asc','dd type=float form=native | put n2=1 d2=1 o2=0')
+	i=i+1
+
+files=['rns','rnips','betas']
+i=0
+for f in files:
+	Flow(f,[parametersCube,'t0s','m0s'],
+	'''
+	window n1=1 f1=%d |
+	getparameter t0s=${SOURCES[1]} m0s=${SOURCES[2]}
+	''' %i)
+	i=i+1
 
 # Constant velocity model for stereoniptomo
 Flow(model,None,
@@ -92,7 +231,7 @@ Flow('s2','m0s','spike mag=0')
 
 Flow('shotsfile',['s2','m0s'],'rcat ${SOURCES[1]} axis=2 | transp')
 
-Flow('anglefile',['parametersCube.rsf','t0s','m0s'],
+Flow('anglefile',[parametersCube,'t0s','m0s'],
 	'''
 	window n1=1 f1=2 |
 	getparameter t0s=${SOURCES[1]} m0s=${SOURCES[2]} beta=y
@@ -147,7 +286,7 @@ Plot('inverted-nipsourcesgz','raygz','sfgraph scalebar=y symbol=+ transp=y yreve
 Plot('inverted-interfacesgz',['velocityModelgz','inverted-nipsourcesgz'],'Overlay')
 
 # Plot original velocity model
-Plot('mod1gz','mod1',
+Plot('mod1gz',trueModel,
 	'''
 	put label1=Depth unit1=Km label2=Position unit2=Km |
 	grey color=j scalebar=y barreverse=y bias=1.508 title="Original velocity model" barlabel="Velocity" barunit="Km/s" min1=0 max1=3 min2=1 max2=5
@@ -176,10 +315,16 @@ layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
 
 #Flow('sz_2','sz_0.asc','dd form=native')
 
+#Flow('sz_2',None,
+#	'''
+#	math n1=11 d1=1 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
+#	put n2=1 n1=22
+#	''')
+
 Flow('sz_2',None,
 	'''
-	math n1=11 d1=1 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
-	put n2=1 n1=22
+	math n1=21 d1=0.5 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
+	put n2=1 n1=42
 	''')
 
 #Flow('sz_1',None,'math n1=11 d1=1 o1=-2 output="1.8"')
@@ -264,9 +409,9 @@ for j in range(nitf):
 		# do a ray-tracing from NIP sources to acquisition surface and measure traveltime
 		Flow([velinv,zspline,vspline,misinv,t0sout,m0sout,rnipsout,betasout,shotsout,anglesout],
 		[model,nipsources,angles,t0s,m0s,
-		rnips,betas,sz,sv,mis,'interpolatedDataCube2'],
+		rnips,betas,sz,sv,mis,interpolatedDataCube],
 		    '''
-		    smooth rect1=10 rect2=10 repeat=5 | landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
 		    ''' % (nit,j))
 
 		model = velinv
@@ -300,7 +445,7 @@ Plot('inverted-nipsources','ray2','sfgraph scalebar=y symbol=+ transp=y yreverse
 Plot('inverted-interfaces',['velocityModel','inverted-nipsources'],'Overlay')
 
 # Plot original velocity model
-Plot('mod1','mod1',
+Plot('mod1',trueModel,
 	'''
 	put label1=Depth unit1=Km label2=Position unit2=Km |
 	grey color=j scalebar=y barreverse=y bias=1.508 title="Original velocity model" barlabel="Velocity" barunit="Km/s" min1=0 max1=3 min2=1 max2=5
@@ -310,8 +455,6 @@ Plot('mod1-img',['mod1','inverted-nipsources'],'Overlay')
 
 # Plot result: Inverted and original models side by side
 Result('inverted-original',['inverted-interfaces','mod1-img'],'SideBySideIso')
-
-SConscript('SConscript2')
 
 Flow('models',models,'rcat axis=3 ${SOURCES[0:%d]}'%(ni*nitf))
 

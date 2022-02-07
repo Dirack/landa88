@@ -12,7 +12,7 @@
 # 
 # License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
-DEP= ../raytrace.c ../grid2.c ../atela.c
+DEP= ../raytrace.c ../grid2.c ../atela.c ../dynamic.c ../interface2d.c
 SRCLANDA = ../Mlanda88tomo.c ../tomography.c ../velocity_lib.c $(DEP) ../vfsacrsnh_lib.c
 
 # model files: Stacked section and parameters cube from CRE stack
@@ -45,16 +45,22 @@ setup1:	landa88tomo/pick.txt landa88tomo/parametersCube.asc
 	@echo "Setup input files for test..."
 	cd landa88tomo && scons -f SConscript1 $(PARAM) && scons model_0.rsf && scons sz.rsf && scons ns=$(shell wc -l landa88tomo/pick.txt | cut -d" " -f1) ni=1 nipsources_1.rsf angles_1.rsf gz_1.rsf
 
+#
+testeitf:	testeitf.x
+
+testeitf.x:	../Mtesteitf.c ../interface2d.c ../cubicsplineint.c
+	gcc -g $^ -I$$RSFSRC/include -I.. -L$$RSFSRC/lib -o $@ -lrsf
+
 # Version of the landa88tomo program for GDB (GNU debugger)
 landa88tomo:	landa88tomo.x GDB1
 
 landa88tomo.x:	$(SRCSTEREO)
 	@echo "Program landa88tomo.x for GDB built"
-	gcc -DGDB_DEBUG -g $(SRCLANDA) -I$$RSFSRC/include -I.. -L$$RSFSRC/lib -o $@ -lrsf -lm
+	gcc -fbounds-check -DGDB_DEBUG -g $(SRCLANDA) -I$$RSFSRC/include -I.. -L$$RSFSRC/lib -o $@ -lrsf -lm
 
 GDB1:
 	@echo "Running GDB script for landa88tomo.x"
-	$(call GDB,1,-ex "b 238" -ex "r",landa88tomo.x)
+	$(call GDB,1,-ex "r",landa88tomo.x)
 
 clean:
 	rm *.x

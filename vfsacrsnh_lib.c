@@ -62,7 +62,7 @@ void disturbParameters( float temperature, /* Temperature of this interation in 
 			float* originalZ, /* original parameters vector */
 			int nz, /*Number of parameters */
 			float scale /* Scale to multiply by disturbance */,
-			int itf)
+			int itf /* Current interface */)
 /*< Disturb parameters from the previous iteration of VFSA
  Note: It receives a parameter vector and distubs it accordingly to 
 VFSA disturb parameters step.
@@ -72,12 +72,13 @@ VFSA disturb parameters step.
 	float u;
 	float disturbance;
 	int i;
-	int nx=nz/(nv-1);
 	// TODO pass max and min values through cmd
-	float minz[2]={0.9,1.75};
-	float maxz[2]={1.45,1.9};
-	float minvel[2]={1.45,1.65};
-	float maxvel[2]={1.60,1.85};
+	#ifdef DISTURB_INTERFACES
+	float minz[2]={0.8,1.75};
+	float maxz[2]={1.3,1.9};
+	#endif
+	float minvel[3]={1.45,1.65,1.73};
+	float maxvel[3]={1.55,1.73,1.8};
 
 	for(i=0;i<nv;i++)		
 		disturbedVel[i]=originalVel[i];
@@ -86,43 +87,42 @@ VFSA disturb parameters step.
 				
 	disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-	disturbedVel[itf] = originalVel[itf] + (disturbance*scale*10) * (0.05);
+	disturbedVel[itf] = originalVel[itf] + (disturbance*scale*10) * (0.1);
 
-	if (disturbedVel[itf] >= maxvel[itf]) {
-
+	if (disturbedVel[itf] >= maxvel[itf])
 		disturbedVel[itf] = maxvel[itf] - (maxvel[itf]-minvel[itf]) * getRandomNumberBetween0and1();
-			
-	}
 
-	if (disturbedVel[itf] <= minvel[itf]) {
-
+	if (disturbedVel[itf] <= minvel[itf])
 		disturbedVel[itf] = (maxvel[itf]-minvel[itf]) * getRandomNumberBetween0and1() + minvel[itf];
-			
-	}
+
+	disturbedVel[0]=1.508;
+	disturbedVel[itf+1]=disturbedVel[itf];
 
 	for(i=0;i<nz;i++)
 		disturbedZ[i]=originalZ[i];
 	
-	for(i=(itf*nx);i<(itf*nx+nx);i++){
+	#ifdef DISTURB_INTERFACES
+	for(i=0;i<nx;i++){
 
 		u=getRandomNumberBetween0and1();
 				
 		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-		disturbedZ[i] = originalZ[i] + (disturbance*scale);
+		disturbedZ[i] = originalZ[i] + (disturbance*scale*10*0.1);
 
-		if (disturbedZ[i] >= maxz[itf]) {
+		if (disturbedZ[i] >= maxz[i/nx]) {
 
-			disturbedZ[i] = maxz[itf] - (maxz[i]-minz[i]) * getRandomNumberBetween0and1();
+			disturbedZ[i] = maxz[i/nx] - (maxz[i/nx]-minz[i/nx]) * getRandomNumberBetween0and1();
 			
 		}
 
-		if (disturbedZ[i] <= minz[itf]) {
+		if (disturbedZ[i] <= minz[i/nx]) {
 
-			disturbedZ[i] = (maxz[i]-minz[i]) * getRandomNumberBetween0and1() + minz[itf];
+			disturbedZ[i] = (maxz[i/nx]-minz[i/nx]) * getRandomNumberBetween0and1() + minz[i/nx];
 			
 		}
 	}
+	#endif
 }
 
 void nonHyperbolicCRSapp(float t[2*mMAX+1][hMAX], float m0, float dm, float om, float dh, float oh, float t0, float v0, float RN, float RNIP, float BETA){
