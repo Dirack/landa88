@@ -33,6 +33,7 @@
 
 #define OFFSET_APERTURE 25
 #define CMP_APERTURE 10
+#define SEMBLANCE
 /*^*/
 
 float creTimeApproximation(float h, // Half-offset
@@ -337,6 +338,7 @@ sum of t=ts+tr.
 			numSamples = stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
 			#else
 			numSamples = stackOverCRETimeSurface(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
+			tmis += (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
 			#endif
 
 		}else if(it == 0){ // Ray endpoint inside model
@@ -353,7 +355,8 @@ sum of t=ts+tr.
 	/* L2 norm to evaluate the time misfit */
 	// TODO: Choose the best object function criteria
 	#ifdef SEMBLANCE
-	tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+	//tmis = (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+	tmis /= ns;
 	#else
 	tmis = sumAmplitudes;
 	#endif
