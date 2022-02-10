@@ -415,7 +415,7 @@ Note: If the velocity model is correct the NIP sources location coincides with i
 	tsz = sf_floatalloc(nxs);
 	coef = sf_floatalloc(4*(nxs-1));
 
-	for(i=0;i<2;i++){
+	for(i=0;i<(nsv-1);i++){
 		l=0;
 		for(im=0;im<nxs;im++){
 			tsz[im]=s[i*nxs+im][0];
