@@ -333,7 +333,7 @@ int main(int argc, char* argv[])
 		temp=getVfsaIterationTemperature(q,c0,temp0);
 						
 		/* parameter disturbance */
-		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001,itf);
+		disturbParameters(temp,cnewv,cnewz,sz,nsz,0.001,mod,itf);
 
 		/* Function to update velocity model */
 		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
@@ -370,7 +370,7 @@ int main(int argc, char* argv[])
 			for(im=0;im<nsz;im++)
 				sz[im]=cnewz[im];
 			for(im=0;im<itf+1;im++)
-				sv[im]=cnewv[im];
+				mod2d_setlayervel(mod,im,cnewv[im]);
 			Em0 = -fabs(tmis);
 		} else {
 			u=getRandomNumberBetween0and1();
@@ -378,7 +378,7 @@ int main(int argc, char* argv[])
 				for(im=0;im<nsz;im++)
 					sz[im]=cnewz[im];
 				for(im=0;im<itf+1;im++)
-					sv[im]=cnewv[im];
+					mod2d_setlayervel(mod,im,cnewv[im]);
 				Em0 = -fabs(tmis);
 			}	
 		}	

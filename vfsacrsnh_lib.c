@@ -34,6 +34,7 @@ Large windows can make the result oscilate a lot and do not converge
 #include <stdlib.h>
 #include <time.h>
 #include <rsf.h>
+#include "model2d.h"
 /*^*/
 
 #define signal(s) ((s<0)?(-1.):(1.))
@@ -56,12 +57,11 @@ float getVfsaIterationTemperature(int iteration,float dampingFactor,float inicia
 /* TODO: Modify this function for multiple interfaces */
 void disturbParameters( float temperature, /* Temperature of this interation in VFSA */
 			float* disturbedVel, /* Parameters disturbed vector */
-			float* originalVel, /* original parameters vector */
-			int nv, /*Number of parameters */
 			float* disturbedZ, /* Parameters disturbed vector */
 			float* originalZ, /* original parameters vector */
 			int nz, /*Number of parameters */
 			float scale /* Scale to multiply by disturbance */,
+			mod2d mod,
 			int itf /* Current interface */)
 /*< Disturb parameters from the previous iteration of VFSA
  Note: It receives a parameter vector and distubs it accordingly to 
@@ -77,25 +77,26 @@ VFSA disturb parameters step.
 	float minz[2]={0.8,1.75};
 	float maxz[2]={1.3,1.9};
 	#endif
-	float minvel[3]={1.45,1.65,1.73};
-	float maxvel[3]={1.55,1.73,1.8};
+	float minvel=mod2d_getlayervmin(mod,itf);
+	float maxvel=mod2d_getlayervmax(mod,itf);
 
-	for(i=0;i<nv;i++)		
-		disturbedVel[i]=originalVel[i];
+	for(i=0;i<mod2d_getnumlayers(mod);i++)		
+		disturbedVel[i]=mod2d_getlayervel(mod,i);
 
 	u=getRandomNumberBetween0and1();
 				
 	disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-	disturbedVel[itf] = originalVel[itf] + (disturbance*scale*10) * (0.1);
+	disturbedVel[itf] = mod2d_getlayervel(mod,itf) + (disturbance*scale*10) * (0.1);
 
-	if (disturbedVel[itf] >= maxvel[itf])
-		disturbedVel[itf] = maxvel[itf] - (maxvel[itf]-minvel[itf]) * getRandomNumberBetween0and1();
+	if (disturbedVel[itf] >= maxvel)
+		disturbedVel[itf] = maxvel - (maxvel-minvel) * getRandomNumberBetween0and1();
 
-	if (disturbedVel[itf] <= minvel[itf])
-		disturbedVel[itf] = (maxvel[itf]-minvel[itf]) * getRandomNumberBetween0and1() + minvel[itf];
+	if (disturbedVel[itf] <= minvel)
+		disturbedVel[itf] = (maxvel-minvel) * getRandomNumberBetween0and1() + minvel;
 
-	disturbedVel[0]=1.508;
+	/* First layer velocity is fixed */
+	disturbedVel[0]=mod2d_getlayervel(mod,0);
 	disturbedVel[itf+1]=disturbedVel[itf];
 
 	for(i=0;i<nz;i++)

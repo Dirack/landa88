@@ -46,3 +46,27 @@ lay2d lay2d_init(float v, /* Layer velocity */
 	layer->vmax = vmax;
 	layer->vmin = vmin;
 }
+
+float lay2d_getvmin(lay2d l)
+/*<TODO>*/
+{return l->vmin;}
+
+float lay2d_getvmax(lay2d l)
+/*<TODO>*/
+{return l->vmax;}
+
+float lay2d_getvel(lay2d l)
+/*< TODO >*/
+{return l->v;}
+
+void lay2d_setvel(lay2d l, float v)
+/*< TODO >*/
+{l->v=v;}
+
+void lay2d_setvmax(lay2d l, float vmax)
+/*< TODO >*/
+{l->vmax=vmax;}
+
+void lay2d_setvmin(lay2d l, float vmin)
+/*< TODO >*/
+{l->vmin=vmin;}
