@@ -13,6 +13,7 @@ The time misfit is calculated by the difference between the reflection traveltim
 #include "tomography.h"
 #include "vfsacrsnh_lib.h"
 #include "velocity_lib.h"
+#include "model2d.h"
 
 #define RAD2DEG 180./SF_PI
 
@@ -71,6 +72,9 @@ int main(int argc, char* argv[])
 	float *otrnip; // Optimized RNIP parameter
 	float *otbeta; // Optimized BETA parameter (radians)
 	float *otangles; // Optimized Normal ray angles (degrees)
+	mod2d mod;
+        float minvel[3]={1.45,1.65,1.73};
+        float maxvel[3]={1.55,1.73,1.8};
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -175,6 +179,7 @@ int main(int argc, char* argv[])
 	sf_floatread(sv,nsv,vz_file);
 
 	interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
+	mod = mod2d_init(nsv,sv,minvel,maxvel,nsz,osz,dsz,sz);
 
 	/* VFSA parameters vectors */
 	cnewv = sf_floatalloc(nsv);
