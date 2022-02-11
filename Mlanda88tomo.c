@@ -333,7 +333,7 @@ int main(int argc, char* argv[])
 		temp=getVfsaIterationTemperature(q,c0,temp0);
 						
 		/* parameter disturbance */
-		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001,itf);
+		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001,mod,itf);
 
 		/* Function to update velocity model */
 		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);

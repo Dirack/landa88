@@ -211,7 +211,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.45,1.72,2.0'))
+	'''%('1.508,1.72,2.0'))
 
 # Initial time misfit for inversion
 Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')

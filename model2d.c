@@ -69,3 +69,15 @@ mod2d mod2d_init(int nlay, /* Number of layers */
 	}
 	return mod;
 }
+
+float mod2d_getlayervmin(mod2d m, int n)
+/*< TODO >*/
+{return lay2d_getvmin(m->lay[n]);}
+
+float mod2d_getlayervmax(mod2d m, int n)
+/*< TODO >*/
+{return lay2d_getvmax(m->lay[n]);}
+
+float mod2d_getlayervel(mod2d m, int n)
+/*< TODO >*/
+{return lay2d_getvel(m->lay[n]);}
