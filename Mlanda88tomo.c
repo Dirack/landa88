@@ -324,6 +324,7 @@ int main(int argc, char* argv[])
 	// in order to avoid interference during inversion
 	sv[itf+1]=sv[itf];
 
+	/* Number of NIP sources for each interface */
 	nx = ns/(nsv-1);
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */

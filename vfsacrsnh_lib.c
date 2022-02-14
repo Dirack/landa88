@@ -87,7 +87,7 @@ VFSA disturb parameters step.
 				
 	disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-	disturbedVel[itf] = mod2d_getlayervel(mod,itf) + (disturbance*scale*10) * (0.1);
+	disturbedVel[itf] = mod2d_getlayervel(mod,itf) + (disturbance*scale);
 
 	if (disturbedVel[itf] >= maxvel)
 		disturbedVel[itf] = maxvel - (maxvel-minvel) * getRandomNumberBetween0and1();
@@ -109,7 +109,7 @@ VFSA disturb parameters step.
 				
 		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-		disturbedZ[i] = originalZ[i] + (disturbance*scale*10*0.1);
+		disturbedZ[i] = originalZ[i] + (disturbance*scale);
 
 		if (disturbedZ[i] >= maxz[i/nx]) {
 

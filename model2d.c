@@ -36,15 +36,15 @@ struct Model2d{
 /* Concrete data type */
 
 mod2d mod2d_init(int nlay, /* Number of layers */
-		 float *sv,
-		 float *minsv,
-		 float *maxsv,
-		 int nsz,
-		 float osz,
-		 float dsz,
-		 float *sz
+		 float *sv, /* Layer's velocities */
+		 float *minsv, /* Layer's minimum velocities */
+		 float *maxsv, /* Layer's maximum velocities */
+		 int nsz, /* Number of interfaces nodepoints */
+		 float osz, /* Interfaces X coordinate origin */
+		 float dsz, /* Interfaces sampling */
+		 float *sz /* Interfaces nodepoints */
 		 )
-/*< TODO >*/
+/*< Initialize model 2D struct >*/
 {
 	int i, j;
 	mod2d mod;
@@ -71,21 +71,21 @@ mod2d mod2d_init(int nlay, /* Number of layers */
 }
 
 float mod2d_getlayervmin(mod2d m, int n)
-/*< TODO >*/
+/*< Get a layer minimum velocity >*/
 {return lay2d_getvmin(m->lay[n]);}
 
 float mod2d_getlayervmax(mod2d m, int n)
-/*< TODO >*/
+/*< Get a layer maximum velocity >*/
 {return lay2d_getvmax(m->lay[n]);}
 
 float mod2d_getlayervel(mod2d m, int n)
-/*< TODO >*/
+/*< Get a layer velocity >*/
 {return lay2d_getvel(m->lay[n]);}
 
 int mod2d_getnumlayers(mod2d m)
-/*< TODO >*/
+/*< Get number of layers in model 2D >*/
 {return m->nlay;}
 
 void mod2d_setlayervel(mod2d m, int n, float v)
-/*< TODO >*/
+/*< Set a layer velocity >*/
 {lay2d_setvel(m->lay[n],v);}
