@@ -201,7 +201,7 @@ void itf2d_getZNodepoints(
 /*< Get interface nodepoints z(x) >*/
 {
 	int i;
-	for(i=0;i<itf->n;i++)
+	for(i=0;i<itf2d_n(itf);i++)
 		z[i]=itf->z[i];
 }
 

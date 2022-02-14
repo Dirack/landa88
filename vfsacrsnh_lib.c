@@ -58,10 +58,8 @@ float getVfsaIterationTemperature(int iteration,float dampingFactor,float inicia
 void disturbParameters( float temperature, /* Temperature of this interation in VFSA */
 			float* disturbedVel, /* Parameters disturbed vector */
 			float* disturbedZ, /* Parameters disturbed vector */
-			float* originalZ, /* original parameters vector */
-			int nz, /*Number of parameters */
+			mod2d mod, /* Model 2D struct */
 			float scale /* Scale to multiply by disturbance */,
-			mod2d mod,
 			int itf /* Current interface */)
 /*< Disturb parameters from the previous iteration of VFSA
  Note: It receives a parameter vector and distubs it accordingly to 
@@ -76,6 +74,7 @@ VFSA disturb parameters step.
 	#ifdef DISTURB_INTERFACES
 	float minz[2]={0.8,1.75};
 	float maxz[2]={1.3,1.9};
+	float *originalZ;
 	#endif
 	float minvel=mod2d_getlayervmin(mod,itf);
 	float maxvel=mod2d_getlayervmax(mod,itf);
@@ -99,10 +98,14 @@ VFSA disturb parameters step.
 	disturbedVel[0]=mod2d_getlayervel(mod,0);
 	disturbedVel[itf+1]=disturbedVel[itf];
 
-	for(i=0;i<nz;i++)
-		disturbedZ[i]=originalZ[i];
-	
-	#ifdef DISTURB_INTERFACES
+	#ifndef DISTURB_INTERFACES
+	mod2d_getallinterfacesnodes(mod,disturbedZ);
+
+	#else
+	// FIXME To correct the interfaces disturbance	
+	int nx = mod2d_getnuminterfacesnodes(mod);
+	originalZ = sf_floatalloc(nx);
+	mod2d_getallinterfacesnodes(mod,originalZ);
 	for(i=0;i<nx;i++){
 
 		u=getRandomNumberBetween0and1();

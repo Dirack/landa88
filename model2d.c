@@ -63,7 +63,7 @@ mod2d mod2d_init(int nlay, /* Number of layers */
 
 	for(i=0;i<nlay-1;i++){
 		for(j=0;j<nsz/(nlay-1);j++){
-                	szz[j]=sz[j+((i-1)*nsz/(nlay-1))];
+                	szz[j]=sz[j+i*(nsz/(nlay-1))];
 		}
 		mod->itf[i]=itf2d_init(szz,nsz/(nlay-1),osz,dsz);
 	}
@@ -93,3 +93,29 @@ void mod2d_setlayervel(mod2d m, int n, float v)
 void mod2d_setinterfacesnodes(mod2d m, int n, float *z)
 /*< Set a interface nodepoints >*/
 {itf2d_setZNodepoints(m->itf[n],z);}
+
+void mod2d_getinterfacesnodes(mod2d m, int n, float *z)
+/*< Get all interfaces nodepoints >*/
+{itf2d_getZNodepoints(m->itf[n],z);}
+
+void mod2d_getallinterfacesnodes(mod2d m, float *z)
+/*< Get all interfaces nodepoints >*/
+{
+	int i, j;
+	int n;
+	float *zz;
+
+	n = itf2d_n(m->itf[0]);
+	zz = sf_floatalloc(n);
+	
+	for(i=0;i<m->nlay-1;i++){
+		itf2d_getZNodepoints(m->itf[i],zz);
+		for(j=0;j<n;j++){
+			z[i*n+j]=zz[j];
+		}
+	}
+}
+
+int mod2d_getnuminterfacesnodes(mod2d m)
+/*< Get number of interfaces nodepoints >*/
+{return itf2d_n(m->itf[0]);}
