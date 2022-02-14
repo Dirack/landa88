@@ -89,3 +89,7 @@ int mod2d_getnumlayers(mod2d m)
 void mod2d_setlayervel(mod2d m, int n, float v)
 /*< Set a layer velocity >*/
 {lay2d_setvel(m->lay[n],v);}
+
+void mod2d_setinterfacesnodes(mod2d m, int n, float *z)
+/*< Set a interface nodepoints >*/
+{itf2d_setZNodepoints(m->itf[n],z);}
