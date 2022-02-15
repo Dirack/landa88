@@ -221,7 +221,8 @@ float calculateInterfaceCurvature(
 	int is; // Spline index
 	itf2d it2; // Interface struct
 	float coef[4]; // Cubic spline coefficients matrix
-	float a, b, c; // Spline coefficients
+	float a, b, c, d; // Spline coefficients
+	float zx, zxp;
 
 	it2 = (itf2d) par;
 	is = (x-itf2d_o(it2))/itf2d_d(it2);
@@ -230,6 +231,7 @@ float calculateInterfaceCurvature(
 	a = coef[0];
 	b = coef[1];
 	c = coef[2];
+	d = coef[3];
 
 	f1 = 3*a*x*x+2*b*x+c;
 	f2 = fabs(6*a*x+2*b);
@@ -237,6 +239,11 @@ float calculateInterfaceCurvature(
 	f1 = f1*f1*f1;
 	kf = f2/(sqrtf(f1));
 
+	zx = a*x*x*x+b*x*x+c*x+d;
+	x = x+0.01;
+	zxp = a*x*x*x+b*x*x+c*x+d;
+
+	if((zx-zxp)<0) kf*=-1.;
 	return kf;
 }
 

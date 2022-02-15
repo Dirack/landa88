@@ -103,6 +103,7 @@ VFSA disturb parameters step.
 
 	#else
 	// FIXME To correct the interfaces disturbance	
+	// TODO to decide to use the interfaces disturbance
 	int nx = mod2d_getnuminterfacesnodes(mod);
 	originalZ = sf_floatalloc(nx);
 	mod2d_getallinterfacesnodes(mod,originalZ);
