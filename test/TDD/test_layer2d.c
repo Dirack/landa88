@@ -20,12 +20,37 @@
 #include <stdio.h>
 #include <rsf.h>
 
+lay2d l2;
+
 void setUp(){};
 
 void tearDown(){};
 
+void test_layer2dInitialization()
+/*< Test layer2d struct initialization >*/
+{
+	l2 = lay2d_init(1.5,1.8,1.2);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.5,lay2d_getvel(l2));
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.8,lay2d_getvmax(l2));
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.2,lay2d_getvmin(l2));
+}
+
+void test_setLayer2dVelocities()
+/*< Test layer2d velocities settings >*/
+{
+	lay2d_setvel(l2,2.5);
+	lay2d_setvmax(l2,2.8);
+	lay2d_setvmin(l2,2.2);
+
+	TEST_ASSERT_FLOAT_WITHIN(0.01,2.5,lay2d_getvel(l2));
+	TEST_ASSERT_FLOAT_WITHIN(0.01,2.8,lay2d_getvmax(l2));
+	TEST_ASSERT_FLOAT_WITHIN(0.01,2.2,lay2d_getvmin(l2));
+}
+
 int main(void){
 
 	UNITY_BEGIN();
+	RUN_TEST(test_layer2dInitialization);
+	RUN_TEST(test_setLayer2dVelocities);
 	return UNITY_END();
 }
