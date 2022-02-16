@@ -90,6 +90,14 @@ void mod2d_setlayervel(mod2d m, int n, float v)
 /*< Set a layer velocity >*/
 {lay2d_setvel(m->lay[n],v);}
 
+void mod2d_setlayervmin(mod2d m, int n, float vmin)
+/*< Set a layer velocity minimum >*/
+{lay2d_setvmin(m->lay[n],vmin);}
+
+void mod2d_setlayervmax(mod2d m, int n, float vmax)
+/*< Set a layer velocity maximum >*/
+{lay2d_setvmax(m->lay[n],vmax);}
+
 void mod2d_setinterfacesnodes(mod2d m, int n, float *z)
 /*< Set a interface nodepoints >*/
 {itf2d_setZNodepoints(m->itf[n],z);}
