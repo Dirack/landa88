@@ -26,10 +26,15 @@ void setUp(){};
 
 void tearDown(){};
 
+void initialize_layer2d_for_tests()
+/*< Initialize layer2d struct for tests >*/
+{
+	l2 = lay2d_init(1.5,1.8,1.2);
+}
+
 void test_layer2dInitialization()
 /*< Test layer2d struct initialization >*/
 {
-	l2 = lay2d_init(1.5,1.8,1.2);
 	TEST_ASSERT_FLOAT_WITHIN(0.01,1.5,lay2d_getvel(l2));
 	TEST_ASSERT_FLOAT_WITHIN(0.01,1.8,lay2d_getvmax(l2));
 	TEST_ASSERT_FLOAT_WITHIN(0.01,1.2,lay2d_getvmin(l2));
@@ -48,6 +53,8 @@ void test_setLayer2dVelocities()
 }
 
 int main(void){
+
+	initialize_layer2d_for_tests();
 
 	UNITY_BEGIN();
 	RUN_TEST(test_layer2dInitialization);

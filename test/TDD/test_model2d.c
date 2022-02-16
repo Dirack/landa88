@@ -27,8 +27,8 @@ void setUp(){};
 
 void tearDown(){};
 
-void test_mod2dInitialization()
-/*< Test model2d initialization >*/
+void initialize_model2d_for_tests()
+/*< Initialize model2d for tests >*/
 {
 	int nlay=4;
 	float sv[4]={1.5,1.65,1.7,2.0};
@@ -40,6 +40,11 @@ void test_mod2dInitialization()
 	float sz[33]={1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.45,1.45,1.45,1.45,1.45,1.45,1.45,1.45,1.45,1.45,1.45,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,};
 
 	m2 = mod2d_init(nlay,sv,minsv,maxsv,nsz,osz,dsz,sz);
+}
+
+void test_mod2dInitialization()
+/*< Test model2d initialization >*/
+{
 
 	TEST_ASSERT_EQUAL(4,mod2d_getnumlayers(m2));
 	TEST_ASSERT_EQUAL(11,mod2d_getnuminterfacesnodes(m2));
@@ -134,6 +139,8 @@ void test_getAllInterfacesNodesFunction()
 }
 
 int main(void){
+
+	initialize_model2d_for_tests();
 
 	UNITY_BEGIN();
 	RUN_TEST(test_mod2dInitialization);
