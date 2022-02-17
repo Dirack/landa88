@@ -71,6 +71,7 @@ mod2d mod2d_init(int nlay, /* Number of layers */
 }
 
 float mod2d_getlayervmin(mod2d m, int n)
+
 /*< Get a layer minimum velocity >*/
 {return lay2d_getvmin(m->lay[n]);}
 

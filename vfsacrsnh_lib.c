@@ -60,6 +60,7 @@ void disturbParameters( float temperature, /* Temperature of this interation in 
 			float* disturbedZ, /* Parameters disturbed vector */
 			mod2d mod, /* Model 2D struct */
 			float scale /* Scale to multiply by disturbance */,
+			mod2d mod,
 			int itf /* Current interface */)
 /*< Disturb parameters from the previous iteration of VFSA
  Note: It receives a parameter vector and distubs it accordingly to 

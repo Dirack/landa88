@@ -48,6 +48,7 @@ lay2d lay2d_init(float v, /* Layer velocity */
 }
 
 float lay2d_getvmin(lay2d l)
+
 /*< Get layer 2D minimum velocity >*/
 {return l->vmin;}
 
