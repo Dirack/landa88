@@ -103,12 +103,37 @@ void test_getVelocityForRaySampleLocation()
 	TEST_ASSERT_FLOAT_WITHIN(0.01,1.5,getVelocityForRaySampleLocation(rt,traj,0));
 }
 
+float cubicInterface(float x)
+/*< TODO >*/
+{
+	return x*x*x-3*x*x+4;
+}
+
+void test_calculateInterfaceCurvature()
+/*< TODO >*/
+{
+	float capa[4]={6.,0.,6.,0.016};
+	itf2d it2;
+	int i;
+	float x[5]={-1,0,1,2,3};
+	float y[9]={0.,3.125,4.0,3.375,2.,0.625,0.,0.875,4.};
+
+	it2 = itf2d_init(y,9,-1,0.5);
+
+	//for(i=0;i<11;i++)
+	//	printf("%f ",cubicInterface(i*0.5-1.));
+	for(i=0;i<4;i++)
+		printf("k[%d]=%f\n",i,calculateInterfaceCurvature(it2,i));
+		//TEST_ASSERT_FLOAT_WITHIN(0.01,capa[i],calculateInterfaceCurvature(it2,i));
+}
+
 int main(void){
 
 	UNITY_BEGIN();
-	RUN_TEST(test_getTransmissionAngleSnellsLaw);
+	/*RUN_TEST(test_getTransmissionAngleSnellsLaw);
 	RUN_TEST(test_getTransmitedRNIPHubralTransmissionLaw);
 	RUN_TEST(test_calculateIncidentAngle);
-	RUN_TEST(test_getVelocityForRaySampleLocation);
+	RUN_TEST(test_getVelocityForRaySampleLocation);*/
+	RUN_TEST(test_calculateInterfaceCurvature);
 	return UNITY_END();
 }

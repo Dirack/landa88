@@ -73,8 +73,8 @@ int main(int argc, char* argv[])
 	float *otbeta; // Optimized BETA parameter (radians)
 	float *otangles; // Optimized Normal ray angles (degrees)
 	mod2d mod;
-        float minvel[3]={1.45,1.65,1.73};
-        float maxvel[3]={1.55,1.73,1.78};
+        float minvel[5]={1.45,1.65,1.73,1.8,1.9};
+        float maxvel[5]={1.55,1.73,1.78,1.9,2.2};
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
