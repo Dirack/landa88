@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 	float *otangles; // Optimized Normal ray angles (degrees)
 	mod2d mod;
         float minvel[3]={1.45,1.65,1.73};
-        float maxvel[3]={1.55,1.73,1.8};
+        float maxvel[3]={1.55,1.73,1.78};
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -324,6 +324,7 @@ int main(int argc, char* argv[])
 	// in order to avoid interference during inversion
 	sv[itf+1]=sv[itf];
 
+	/* Number of NIP sources for each interface */
 	nx = ns/(nsv-1);
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
@@ -333,8 +334,8 @@ int main(int argc, char* argv[])
 		temp=getVfsaIterationTemperature(q,c0,temp0);
 						
 		/* parameter disturbance */
-		disturbParameters(temp,cnewv,sv,nsv,cnewz,sz,nsz,0.001,mod,itf);
 
+		disturbParameters(temp,cnewv,cnewz,mod,0.001,itf);
 		/* Function to update velocity model */
 		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
 
@@ -370,7 +371,7 @@ int main(int argc, char* argv[])
 			for(im=0;im<nsz;im++)
 				sz[im]=cnewz[im];
 			for(im=0;im<itf+1;im++)
-				sv[im]=cnewv[im];
+				mod2d_setlayervel(mod,im,cnewv[im]);
 			Em0 = -fabs(tmis);
 		} else {
 			u=getRandomNumberBetween0and1();
@@ -378,7 +379,7 @@ int main(int argc, char* argv[])
 				for(im=0;im<nsz;im++)
 					sz[im]=cnewz[im];
 				for(im=0;im<itf+1;im++)
-					sv[im]=cnewv[im];
+					mod2d_setlayervel(mod,im,cnewv[im]);
 				Em0 = -fabs(tmis);
 			}	
 		}	

@@ -36,7 +36,7 @@ struct Layer2d{
 lay2d lay2d_init(float v, /* Layer velocity */
 		 float vmax, /* Max layer velocity */
 		 float vmin /* Min layer velocity */)
-/*< Initialize layer struct >*/
+/*< Initialize layer 2D struct >*/
 {
 	lay2d layer;
 
@@ -48,13 +48,26 @@ lay2d lay2d_init(float v, /* Layer velocity */
 }
 
 float lay2d_getvmin(lay2d l)
-/*<TODO>*/
+
+/*< Get layer 2D minimum velocity >*/
 {return l->vmin;}
 
 float lay2d_getvmax(lay2d l)
-/*<TODO>*/
+/*< Get layer 2D maximum velocity >*/
 {return l->vmax;}
 
 float lay2d_getvel(lay2d l)
-/*< TODO >*/
+/*< Get layer 2D velocity >*/
 {return l->v;}
+
+void lay2d_setvel(lay2d l, float v)
+/*< Set layer 2D velocity >*/
+{l->v=v;}
+
+void lay2d_setvmax(lay2d l, float vmax)
+/*< Set layer 2D maximum velocity >*/
+{l->vmax=vmax;}
+
+void lay2d_setvmin(lay2d l, float vmin)
+/*< Set layer 2D minimum velocity >*/
+{l->vmin=vmin;}

@@ -41,11 +41,13 @@ Depends('crsParameters-m0-0-t0-0.rsf','interpolatedDataCube2.rsf')
 xmax = 6.0
 zmax = 4.0
 
-layers = ((1.00,1.20,0.90,1.00),
-          (1.85,1.85,1.85,1.85))
+layers = ((0.90,1.25,1.25,0.90),
+          (1.5,1.65,1.65,1.5),
+          (1.85,2.0,2.0,1.85))
 
 velocities = (1.508,
               1.690,
+	      1.750,
               2.0)
 
 ### Modeling ###
@@ -187,13 +189,15 @@ Result(stackedSection,
 
 ni = int(ARGUMENTS.get('ni',1)) # Number of iterations in inversion loop
 nit = int(ARGUMENTS.get('nit',100)) # Number of iterations in tomography
-nitf = int(ARGUMENTS.get('nitf',2)) # Number of interfaces
+nitf = int(ARGUMENTS.get('nitf',3)) # Number of interfaces
 model = 'model_0' # Constant velocity model
 
 # Traveltime picking
-Flow('pick1.txt',stackedSection,'ipick')
-Flow('pick2.txt',stackedSection,'ipick')
-Flow('pick.txt','pick1.txt pick2.txt','/usr/bin/cat $SOURCES')
+picks=[]
+for i in range(nitf):
+	picks.append('pick'+str(i)+'.txt')
+	Flow(picks[i],stackedSection,'ipick')
+Flow('pick.txt',picks,'/usr/bin/cat $SOURCES')
 
 files=['t0s','m0s']
 i=1
@@ -303,8 +307,9 @@ Result('invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
 #layers2 = ((1.2,1.2,1.2,1.2,1.2,1.0,1.0,1.0,0.9,0.9,0.9),
 #	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
 
-layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
-	(1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85))
+layers2 = ((1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2),
+	(1.40,1.40,1.40,1.40,1.40,1.40,1.40,1.40,1.40,1.40,1.40),
+	(1.80,1.80,1.80,1.80,1.80,1.80,1.80,1.80,1.80,1.80,1.80))
 
 # Nodepoints of the cubic spline velocity function
 #Flow('sz_0.asc',None,
@@ -315,16 +320,10 @@ layers2 = ((1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0),
 
 #Flow('sz_2','sz_0.asc','dd form=native')
 
-#Flow('sz_2',None,
-#	'''
-#	math n1=11 d1=1 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
-#	put n2=1 n1=22
-#	''')
-
 Flow('sz_2',None,
 	'''
-	math n1=21 d1=0.5 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
-	put n2=1 n1=42
+	math n1=21 d1=0.5 o1=-2 n2=3 o2=1.0 d2=0.41 output="x2" |
+	put n2=1 n1=63
 	''')
 
 #Flow('sz_1',None,'math n1=11 d1=1 o1=-2 output="1.8"')
@@ -355,8 +354,8 @@ sv='sv_2'
 # Layer's velocity
 Flow(sv,None,
 	'''
-	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.508,1.72,2.0'))
+	spike nsp=4 mag=%s k1=1,2,3,4 n1=4
+	'''%('1.508,1.5,1.7,2.0'))
 
 # Initial time misfit for inversion
 Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')
