@@ -210,6 +210,30 @@ to the interface will be the incident angle returned
 	return ei;
 }
 
+
+float first_deriv( float h /* step */,
+		float fxph /* f(x+h)*/,
+		float fxmh /* f(x-h) */)
+/*< Calculate first derivative numerically >*/
+{
+	float diff;
+	diff=(fxph-fxmh);
+
+	if(fabs(diff)<h) return 0.;
+	return (diff)/(2*h);
+}
+
+
+float second_deriv( float h /* passo h */,
+		float fxm3h /* f(x-3h) */,
+		float fxm2h /* f(x-2h)*/,
+		float fxmh /* f(x-h) */,
+		float fx /* f(x) */)
+/*< Calcular a derivada da função utilizando o método das diferenças finitas >*/
+{
+	return (2*fx-5*fxmh+4*fxm2h-fxm3h)/(h*h);
+}
+
 float calculateInterfaceCurvature(
 				  void *par, /* Interface struct */
 				  float x /* Coordinate (z,x) */)
@@ -221,21 +245,28 @@ float calculateInterfaceCurvature(
 	int is; // Spline index
 	itf2d it2; // Interface struct
 	float coef[4]; // Cubic spline coefficients matrix
-	float a, b, c; // Spline coefficients
-	//float zx, zxp;
+	float a, b, c, d; // Spline coefficients
+	float xp, xm;
 
 	it2 = (itf2d) par;
 	is = (x-itf2d_o(it2))/itf2d_d(it2);
 	itf2d_getSplineCoefficients(it2,coef,is);
-	printf("x=%f os=%f ds=%f\n",x,itf2d_o(it2),itf2d_d(it2));
 
 	a = coef[0];
 	b = coef[1];
 	c = coef[2];
-	//d = coef[3];
+	d = coef[3];
 
 	f1 = 3*a*x*x+2*b*x+c;
+	xm = x-0.001;
+	xp = x+0.001;
+	printf("x=%f xm=%f xp=%f\n",x,xm,xp);
+	f1 = first_deriv(0.001,a*xp*xp*xp+b*xp*xp+c*xp+d,a*xm*xm*xm+b*xm*xm+c*xm+d);
 	//f2 = fabs(6*a*x+2*b);
+	xm = x+0.01;
+	xp = x+2*0.01;
+	//f2 = second_deriv(0.01,a*xp*xp*xp+b*xp*xp+c*xp+d,a*xm*xm*xm+b*xm*xm+c*xm+d,a*x*x*x+b*x*x+c*x+d);
+	//f2 = 6.;
 	f2 = 6*a*x+2*b;
 	printf("is=%d f1=%f f2=%f\n",is,f1,f2);
 	f1 = 1+f1*f1;

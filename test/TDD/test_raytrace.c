@@ -104,10 +104,47 @@ void test_getVelocityForRaySampleLocation()
 }
 
 float cubicInterface(float x)
-/*< TODO >*/
+/*< Cubic function for tests >*/
 {
 	return x*x*x-3*x*x+4;
 }
+
+void test_firstDerivativeFunction()
+/*< Test first derivative numerical calculation >*/
+{
+	float fxph;
+	float fxmh;
+	float x[4]={0.,1.,2.,3.};
+	float dydx[4]={0.,-3.,0.,9.};
+	int i;
+
+	for(i=0;i<4;i++){
+		fxph = cubicInterface(x[i]+0.001);
+		fxmh = cubicInterface(x[i]-0.001);
+
+		TEST_ASSERT_FLOAT_WITHIN(0.01,dydx[i],first_deriv(0.001,fxph,fxmh));
+	}
+}
+
+void test_secondDerivativeFunction()
+/*< Test second derivative numerical calculation >*/
+{
+	float fxm3h, fxm2h, fxmh, fx;
+	float x[4]={0.,1.,2.,3.};
+	float dydx[4]={6.,0.,6.,12.};
+	int i;
+
+	for(i=0;i<4;i++){
+		fxm3h = cubicInterface(x[i]-3*0.01);
+		fxm2h = cubicInterface(x[i]-2*0.01);
+		fxmh = cubicInterface(x[i]-0.01);
+		fx = cubicInterface(x[i]);
+
+		//TEST_ASSERT_FLOAT_WITHIN(0.01,dydx[i],second_deriv(0.001,fxp2h,fxph,fx));
+		printf("%f %f\n",dydx[i],second_deriv(0.01,fxm3h,fxm2h,fxmh,fx));
+	}
+}
+
 
 void test_calculateInterfaceCurvature()
 /*< TODO >*/
@@ -133,7 +170,9 @@ int main(void){
 	/*RUN_TEST(test_getTransmissionAngleSnellsLaw);
 	RUN_TEST(test_getTransmitedRNIPHubralTransmissionLaw);
 	RUN_TEST(test_calculateIncidentAngle);
-	RUN_TEST(test_getVelocityForRaySampleLocation);*/
-	RUN_TEST(test_calculateInterfaceCurvature);
+	RUN_TEST(test_getVelocityForRaySampleLocation);
+	RUN_TEST(test_calculateInterfaceCurvature);*/
+	//RUN_TEST(test_firstDerivativeFunction);
+	RUN_TEST(test_secondDerivativeFunction);
 	return UNITY_END();
 }
