@@ -129,19 +129,23 @@ void test_firstDerivativeFunction()
 void test_secondDerivativeFunction()
 /*< Test second derivative numerical calculation >*/
 {
-	float fxm3h, fxm2h, fxmh, fx;
+	float fxm7h, fxm6h, fxm5h, fxm4h, fxm3h, fxm2h, fxmh, fx;
 	float x[4]={0.,1.,2.,3.};
 	float dydx[4]={6.,0.,6.,12.};
 	int i;
 
 	for(i=0;i<4;i++){
+		fxm7h = cubicInterface(x[i]-7*0.01);
+		fxm6h = cubicInterface(x[i]-6*0.01);
+		fxm5h = cubicInterface(x[i]-5*0.01);
+		fxm4h = cubicInterface(x[i]-4*0.01);
 		fxm3h = cubicInterface(x[i]-3*0.01);
 		fxm2h = cubicInterface(x[i]-2*0.01);
 		fxmh = cubicInterface(x[i]-0.01);
 		fx = cubicInterface(x[i]);
 
 		//TEST_ASSERT_FLOAT_WITHIN(0.01,dydx[i],second_deriv(0.001,fxp2h,fxph,fx));
-		printf("%f %f\n",dydx[i],second_deriv(0.01,fxm3h,fxm2h,fxmh,fx));
+		printf("%f %f\n",dydx[i],second_deriv(0.01,fxm7h,fxm6h,fxm5h,fxm4h,fxm3h,fxm2h,fxmh,fx));
 	}
 }
 
@@ -153,9 +157,9 @@ void test_calculateInterfaceCurvature()
 	itf2d it2;
 	int i;
 	float x[5]={-1,0,1,2,3};
-	float y[9]={0.,3.125,4.0,3.375,2.,0.625,0.,0.875,4.};
+	float y[10]={0.,3.125,4.0,3.375,2.,0.625,0.,0.875,4.,10.125};
 
-	it2 = itf2d_init(y,9,-1,0.5);
+	it2 = itf2d_init(y,10,-1,0.5);
 
 	//for(i=0;i<11;i++)
 	//	printf("%f ",cubicInterface(i*0.5-1.));
@@ -170,9 +174,9 @@ int main(void){
 	/*RUN_TEST(test_getTransmissionAngleSnellsLaw);
 	RUN_TEST(test_getTransmitedRNIPHubralTransmissionLaw);
 	RUN_TEST(test_calculateIncidentAngle);
-	RUN_TEST(test_getVelocityForRaySampleLocation);
-	RUN_TEST(test_calculateInterfaceCurvature);*/
+	RUN_TEST(test_getVelocityForRaySampleLocation);*/
 	//RUN_TEST(test_firstDerivativeFunction);
-	RUN_TEST(test_secondDerivativeFunction);
+	//RUN_TEST(test_secondDerivativeFunction);
+	RUN_TEST(test_calculateInterfaceCurvature);
 	return UNITY_END();
 }

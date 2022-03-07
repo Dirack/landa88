@@ -225,13 +225,17 @@ float first_deriv( float h /* step */,
 
 
 float second_deriv( float h /* passo h */,
+		float fxm7h /* f(x-3h) */,
+		float fxm6h /* f(x-3h) */,
+		float fxm5h /* f(x-3h) */,
+		float fxm4h /* f(x-3h) */,
 		float fxm3h /* f(x-3h) */,
 		float fxm2h /* f(x-2h)*/,
 		float fxmh /* f(x-h) */,
 		float fx /* f(x) */)
 /*< Calcular a derivada da função utilizando o método das diferenças finitas >*/
 {
-	return (2*fx-5*fxmh+4*fxm2h-fxm3h)/(h*h);
+	return ((469./90.)*fx+(-223./10.)*fxmh+(879./20.)*fxm2h+(-949./18.)*fxm3h+41.*fxm4h+(-201./10.)*fxm5h+(1019./180.)*fxm6h+(-7./10.)*fxm7h)/(h*h);
 }
 
 float calculateInterfaceCurvature(
@@ -247,8 +251,10 @@ float calculateInterfaceCurvature(
 	float coef[4]; // Cubic spline coefficients matrix
 	float a, b, c, d; // Spline coefficients
 	float xp, xm;
+	float xm7h,xm6h,xm5h,xm4h,xm3h, xm2h, xmh;
 
 	it2 = (itf2d) par;
+
 	is = (x-itf2d_o(it2))/itf2d_d(it2);
 	itf2d_getSplineCoefficients(it2,coef,is);
 
@@ -257,17 +263,25 @@ float calculateInterfaceCurvature(
 	c = coef[2];
 	d = coef[3];
 
-	f1 = 3*a*x*x+2*b*x+c;
-	xm = x-0.001;
+	//f1 = 3*a*x*x+2*b*x+c;
 	xp = x+0.001;
-	printf("x=%f xm=%f xp=%f\n",x,xm,xp);
-	f1 = first_deriv(0.001,a*xp*xp*xp+b*xp*xp+c*xp+d,a*xm*xm*xm+b*xm*xm+c*xm+d);
+	xm = x-0.001;
+	//printf("x=%f xm=%f xp=%f\n",x,xm,xp);
+	f1 = first_deriv(0.001,getZCoordinateOfInterface(it2,xp),getZCoordinateOfInterface(it2,xm));
 	//f2 = fabs(6*a*x+2*b);
-	xm = x+0.01;
-	xp = x+2*0.01;
+	xm7h = getZCoordinateOfInterface(it2,x-7*0.01);
+	xm6h = getZCoordinateOfInterface(it2,x-6*0.01);
+	xm5h = getZCoordinateOfInterface(it2,x-5*0.01);
+	xm4h = getZCoordinateOfInterface(it2,x-4*0.01);
+	xm3h = getZCoordinateOfInterface(it2,x-3*0.01);
+	xm2h = getZCoordinateOfInterface(it2,x-2*0.01);
+	xmh = getZCoordinateOfInterface(it2,x-0.01);
+	x = getZCoordinateOfInterface(it2,x);
+
+	f2 = second_deriv(0.01,xm7h,xm6h,xm5h,xm4h,xm3h,xm2h,xmh,x);
 	//f2 = second_deriv(0.01,a*xp*xp*xp+b*xp*xp+c*xp+d,a*xm*xm*xm+b*xm*xm+c*xm+d,a*x*x*x+b*x*x+c*x+d);
 	//f2 = 6.;
-	f2 = 6*a*x+2*b;
+	//f2 = 6*a*x+2*b;
 	printf("is=%d f1=%f f2=%f\n",is,f1,f2);
 	f1 = 1+f1*f1;
 	f1 = f1*f1*f1;
