@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# SConstruct (Python3)
+# 
+# Purpose: Full velocity inversion with NIP tomography.
+# Velocity model with plane interfaces.
+# 
+# Site: https://dirack.github.io
+# 
+# Version 1.0
+# 
+# Programmer: Rodolfo A C Neves (Dirack) 31/01/2022
+# 
+# Email: rodolfo_profissional@hotmail.com
+# 
+# License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
+
+# Madagascar Package
+from rsf.proj import *
+
+# Madagascar Recipes
+from rsf.recipes.pefInterpolation import pefInterpolation as pef
+from rsf.recipes.kimodel import multiLayerModel as mlmod
+from rsf.recipes.kimodel import kirchhoffNewtonModeling as kinewmod
+from rsf.recipes.kimodel import arr2str
+
+
+# Main Files
+trueModel='trueModel'
+stackedSection='stackedSection'
+parametersCube='parametersCube'
+dataCube='dataCube'
+interpolatedDataCube='interpolatedDataCube2'
+
+Fetch(dataCube+'.rsf',server='https://github.com/Dirack/dirack.github.io/',
+        top='releases/download/',
+        dir='v0.1-alpha.1/',
+        usedatapath=0)
+
+# Establish building dependencies
+Depends('interpolatedDataCube.rsf',dataCube+'.rsf')
+Depends('interpolatedDataCube2.rsf','interpolatedDataCube.rsf')
+Depends('crsParameters-m0-0-t0-0.rsf','interpolatedDataCube2.rsf')
+
+# Generate a modeled data cube
+nt=1001
+dt=0.004
+nm=400
+dm=0.025
+nh=51
+dh=0.025
+
+### PEF interpolation ###
+
+# Use default value or pass through command line
+# PEF coeficients and PEF Smooth radius
+a1=int(ARGUMENTS.get('a1',10))
+a2=int(ARGUMENTS.get('a2',2))
+rect1=int(ARGUMENTS.get('rect1',50))
+rect2=int(ARGUMENTS.get('rect2',2))
+
+# Number of offsets to interpolate
+nhi=int(ARGUMENTS.get('nhi',nh))
+
+pef(dataCube=dataCube,
+    interpolated='interpolatedDataCube',
+    nm=nm,
+    dm=dm,
+    nt=nt,
+    dt=dt,
+    nhi=nhi,
+    a1=a1,
+    a2=a2,
+    rect1=rect1,
+    rect2=rect2)
+
+# Do the PEF interpolation one more time
+# to increase the CMP sampling
+pef('interpolatedDataCube',
+    interpolatedDataCube,
+    nm=2*nm,
+    dm=dm/2.0,
+    nt=nt,
+    dt=dt,
+   nhi=nhi,
+    a1=a1,
+    a2=a2,
+    rect1=rect1,
+    rect2=rect2)
+
+### VFSA and CRE Stacking ####
+
+# It uses Very Fast Simulated Aneeling and non hyperbolic CRS
+# to get zero offset CRS parameters (RN, RNIP and BETA) from interpolated data cube
+
+# VFSA Parameters
+v0 = float(ARGUMENTS.get('v0',1.5))
+ot0 = float(ARGUMENTS.get('ot0',0.2))
+dt0 = float(ARGUMENTS.get('dt0',0.004))
+nt0 = int(ARGUMENTS.get('nt0',451))
+om0 = float(ARGUMENTS.get('om0',1.5))
+dm0 = float(ARGUMENTS.get('dm0',0.00625))
+nm0 = int(ARGUMENTS.get('nm0',241))
+aperture = int(ARGUMENTS.get('aperture',30))
+cds = bool(ARGUMENTS.get('cds',False))
+
+Flow(parametersCube,interpolatedDataCube,
+        '''
+        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=8 verb=y
+        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0))
+
+Flow('creTrajectories',[interpolatedDataCube,parametersCube],
+        '''
+        cretrajec param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y 
+        '''%(nm0,om0,dm0,nt0,ot0,dt0))
+
+Flow(['cregathers','mhCoordinates'],[interpolatedDataCube,'creTrajectories'],
+        '''
+        getcregather cremh=${SOURCES[1]} m=${TARGETS[1]} aperture=%d nm0=%g nt0=%g |
+        put label1=Time unit1=s label2=Offset unit2=Km label3=t0 unit3=s
+        label4=m0 unit4=Km n3=%d d3=%g o3=%g n4=%d d4=%g o4=%g
+        ''' % (aperture,nm0,nt0,nt0,dt0,ot0,nm0,dm0,om0))
+
+Flow('cretimecurves',['mhCoordinates',parametersCube],
+        '''
+        getcretimecurve param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y v0=%g |
+        put label1=Offset unit1=Km label2=t0 unit2=s label3=m0 unit3=Km
+        n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,nt0,dt0,ot0,nm0,dm0,om0))
+
+Flow('parametersCube2',parametersCube,
+	'''
+	put label2=t0 label3=m0 unit2=Km unit3=Km
+	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+	'''%(nt0,dt0,ot0,nm0,dm0,om0))
+
+parametersCube='parametersCube2'
+
+Flow(stackedSection,['cregathers','cretimecurves'],
+        '''
+        crestack aperture=%d verb=y timeCurves=${SOURCES[1]} |
+        put label1=t0 unit1=s label2=m0 unit2=Km
+        ''' %(aperture))
+
+Result(stackedSection,
+	'''
+	grey title="Stacked Section"
+	''')
+
+End()
