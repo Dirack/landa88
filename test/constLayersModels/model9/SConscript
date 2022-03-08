@@ -3,7 +3,7 @@ from rsf.proj import *
 # Main Files
 trueModel='trueModel'
 stackedSection='stackedSection'
-parametersCube='parametersCube'
+parametersCube='parametersCube3'
 dataCube='dataCube'
 interpolatedDataCube='interpolatedDataCube2'
 
@@ -14,7 +14,7 @@ dt0 = float(ARGUMENTS.get('dt0',0.004))
 nt0 = int(ARGUMENTS.get('nt0',451))
 dm0 = float(ARGUMENTS.get('dm0',0.00625))
 om0 = float(ARGUMENTS.get('om0',1.5))
-nm0 = int(ARGUMENTS.get('nm0',241))
+nm0 = int(ARGUMENTS.get('nm0',481))
 aperture = int(ARGUMENTS.get('aperture',30))
 cds = bool(ARGUMENTS.get('cds',False))
 
@@ -36,12 +36,31 @@ Flow(stackedSection,[interpolatedDataCube,'creTrajectories','cretimecurves'],
 	''' % (aperture,nm0,om0,dm0,nt0,ot0,dt0))
 
 # Stacked Section bandpass and deconvolution
-Flow('spik',stackedSection,
-        '''
-	bandpass fhi=45 flo=10 |
-        pef minlag=.004 maxlag=.140 pnoise=.1 mincorr=0 maxcorr=1.
-        ''')
+#Flow('spik',stackedSection,
+#        '''
+#	bandpass fhi=50 flo=5 |
+#	agc |
+#        pef minlag=.004 maxlag=.140 pnoise=.3 mincorr=0 maxcorr=1.8 |
+#	fxdecon lenf=10 verb=1 n2w=481 fmin=5 fmax=125
+#        ''')
 
-Result('spik','grey title="Stacked Section"')
+Flow('spik',stackedSection,
+	'''
+	fxdecon lenf=4 verb=1 n2w=481 fmin=5 fmax=125 |
+	agc
+       ''')
+
+Plot('spik','grey title="Stacked Section"')
+
+Plot('zeroOffset_orig','grey title="Original Section"')
+Plot('zeroOffset_interp','agc | grey title="Interpolated Section"')
+
+Result('result',['zeroOffset_interp','spik'],'SideBySideIso')
+
+Flow('parametersCube4',parametersCube,
+        '''
+        put label2=t0 label3=m0 unit2=Km unit3=Km
+        n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+        '''%(nt0,dt0,ot0,nm0,dm0,om0))
 
 End()
