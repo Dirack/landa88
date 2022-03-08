@@ -101,7 +101,7 @@ dt0 = float(ARGUMENTS.get('dt0',0.004))
 nt0 = int(ARGUMENTS.get('nt0',451))
 om0 = float(ARGUMENTS.get('om0',1.5))
 dm0 = float(ARGUMENTS.get('dm0',0.00625))
-nm0 = int(ARGUMENTS.get('nm0',241))
+nm0 = int(ARGUMENTS.get('nm0',481))
 aperture = int(ARGUMENTS.get('aperture',30))
 cds = bool(ARGUMENTS.get('cds',False))
 
@@ -115,19 +115,27 @@ Flow('creTrajectories',[interpolatedDataCube,parametersCube],
         cretrajec param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y 
         '''%(nm0,om0,dm0,nt0,ot0,dt0))
 
-Flow(['cregathers','mhCoordinates'],[interpolatedDataCube,'creTrajectories'],
-        '''
-        getcregather cremh=${SOURCES[1]} m=${TARGETS[1]} aperture=%d nm0=%g nt0=%g |
-        put label1=Time unit1=s label2=Offset unit2=Km label3=t0 unit3=s
-        label4=m0 unit4=Km n3=%d d3=%g o3=%g n4=%d d4=%g o4=%g
-        ''' % (aperture,nm0,nt0,nt0,dt0,ot0,nm0,dm0,om0))
-
-Flow('cretimecurves',['mhCoordinates',parametersCube],
+Flow('cretimecurves',['creTrajectories',parametersCube],
         '''
         getcretimecurve param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y v0=%g |
         put label1=Offset unit1=Km label2=t0 unit2=s label3=m0 unit3=Km
         n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
         '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,nt0,dt0,ot0,nm0,dm0,om0))
+
+Flow(stackedSection,[interpolatedDataCube,'creTrajectories','cretimecurves'],
+        '''
+        getcreandstack cremh=${SOURCES[1]} timeCurves=${SOURCES[2]} aperture=%d nm0=%g om0=%g dm0=%g nt0=%g ot0=%g dt0=%g
+        ''' % (aperture,nm0,om0,dm0,nt0,ot0,dt0))
+
+# Stacked Section bandpass and deconvolution
+Flow('spik',stackedSection,
+        '''
+        bandpass fhi=45 flo=10 |
+        pef minlag=.004 maxlag=.140 pnoise=.1 mincorr=0 maxcorr=1.
+        ''')
+
+Result('spik','grey title="Stacked Section"')
+
 
 Flow('parametersCube2',parametersCube,
 	'''
@@ -136,16 +144,5 @@ Flow('parametersCube2',parametersCube,
 	'''%(nt0,dt0,ot0,nm0,dm0,om0))
 
 parametersCube='parametersCube2'
-
-Flow(stackedSection,['cregathers','cretimecurves'],
-        '''
-        crestack aperture=%d verb=y timeCurves=${SOURCES[1]} |
-        put label1=t0 unit1=s label2=m0 unit2=Km
-        ''' %(aperture))
-
-Result(stackedSection,
-	'''
-	grey title="Stacked Section"
-	''')
 
 End()
