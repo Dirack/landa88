@@ -76,6 +76,23 @@ void test_getNODFunctions(){
 	TEST_ASSERT_FLOAT_WITHIN(0.01,itf2d_d(itf),1.0);
 }
 
+void test_setNODFunctions(){
+/*< Test functions to set n, o, d for interface struct >*/
+	itf2d itf2;
+	float a[5]={1.,1.,1.,1.,1.};
+	itf2=itf2d_init(a,5,-3,0.5);
+	TEST_ASSERT_EQUAL(itf2d_n(itf2),5);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,itf2d_o(itf2),-3.0);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,itf2d_d(itf2),0.5);
+
+	itf2d_setn(itf2,50);
+	itf2d_seto(itf2,0.);
+	itf2d_setd(itf2,0.1);
+	TEST_ASSERT_EQUAL(itf2d_n(itf2),50);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,itf2d_o(itf2),0.);
+	TEST_ASSERT_FLOAT_WITHIN(0.01,itf2d_d(itf2),0.1);
+}
+
 void test_interfaceInterpolation(){
 /*< Test cubic spline interpolation of interfaces nodepoints with calculated values >*/
 
@@ -173,6 +190,17 @@ void test_calcInterfacesZcoord(){
 	TEST_ASSERT_FLOAT_WITHIN(0.01,1.85,zi[1]);
 }
 
+void test_freeInterfaceStorage()
+/*< Test internal storage free >*/
+{
+	itf2d itf2;
+	float a[5]={1.,1.,1.,1.,1.};
+	itf2=itf2d_init(a,5,-3,0.5);
+
+	itf2d_free(&itf2);
+	TEST_ASSERT_NULL(itf2);
+}
+
 int main(void){
 
 	initialize_test_interface();
@@ -181,9 +209,11 @@ int main(void){
 	RUN_TEST(test_getZNodepoints);
 	RUN_TEST(test_setZNodepoints);
 	RUN_TEST(test_getNODFunctions);
+	RUN_TEST(test_setNODFunctions);
 	RUN_TEST(test_interfaceInterpolation);
 	RUN_TEST(test_cubicSplineCoefficientsCalculation);
 	RUN_TEST(test_cubicSplineCoefficientsCalculationPassedAsVector);
 	RUN_TEST(test_calcInterfacesZcoord);
+	RUN_TEST(test_freeInterfaceStorage);
 	return UNITY_END();
 }

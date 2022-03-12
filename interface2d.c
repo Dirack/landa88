@@ -179,15 +179,26 @@ float itf2d_d(itf2d itf)
 /*< Get interface nodepoints sampling >*/
 {return itf->d;}
 
+void itf2d_setn(itf2d itf, int n)
+/*< Set number of interface nodepoints >*/
+{itf->n = n;}
+
+void itf2d_seto(itf2d itf, float o)
+/*< Set interface axis origin >*/
+{itf->o=o;}
+
+void itf2d_setd(itf2d itf, float d)
+/*< Set interface nodepoints sampling >*/
+{itf->d=d;}
+
 void itf2d_setZNodepoints(
 		itf2d itf, /* Interface */
 		float *z /* Nodepoints z(x) */)
 /*< Update interface nodepoints z(x) >*/
 {
 	int i;
-	float *x;
+	float x[itf->n];
 
-	x = sf_floatalloc(itf->n);
 	for(i=0;i<itf->n;i++){
 		x[i] = itf->o+(i*itf->d);
 		itf->z[i]=z[i];
@@ -217,4 +228,13 @@ Note: Coefficients vector has 4 coefficients for each (nx-1) spline
 	c[1] = itf->coef[is*4+1];
 	c[2] = itf->coef[is*4+2];
 	c[3] = itf->coef[is*4+3];
+}
+
+void itf2d_free(itf2d* itf)
+/*< Free internal storage >*/
+{
+	free((*itf)->coef);
+	free((*itf)->z);
+	free(*itf);
+	*itf=NULL;
 }
