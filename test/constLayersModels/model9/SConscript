@@ -3,7 +3,7 @@ from rsf.proj import *
 # Main Files
 trueModel='trueModel'
 stackedSection='stackedSection'
-parametersCube='parametersCube3'
+parametersCube='parametersCube'
 dataCube='dataCube'
 interpolatedDataCube='interpolatedDataCube2'
 
@@ -14,53 +14,45 @@ dt0 = float(ARGUMENTS.get('dt0',0.004))
 nt0 = int(ARGUMENTS.get('nt0',451))
 dm0 = float(ARGUMENTS.get('dm0',0.00625))
 om0 = float(ARGUMENTS.get('om0',1.5))
-nm0 = int(ARGUMENTS.get('nm0',481))
-aperture = int(ARGUMENTS.get('aperture',30))
+nm0 = int(ARGUMENTS.get('nm0',962))
+aperture = int(ARGUMENTS.get('aperture',35))
 cds = bool(ARGUMENTS.get('cds',False))
-
-Flow('creTrajectories',[interpolatedDataCube,parametersCube],
-	'''
-	cretrajec param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y 
-	'''%(nm0,om0,dm0,nt0,ot0,dt0))
-
-Flow('cretimecurves',['creTrajectories',parametersCube],
-	'''
-	getcretimecurve param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y v0=%g |
-	put label1=Offset unit1=Km label2=t0 unit2=s label3=m0 unit3=Km
-	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
-	'''%(nm0,om0,dm0,nt0,ot0,dt0,v0,nt0,dt0,ot0,nm0,dm0,om0))
-
-Flow(stackedSection,[interpolatedDataCube,'creTrajectories','cretimecurves'],
-	'''
-	getcreandstack cremh=${SOURCES[1]} timeCurves=${SOURCES[2]} aperture=%d nm0=%g om0=%g dm0=%g nt0=%g ot0=%g dt0=%g
-	''' % (aperture,nm0,om0,dm0,nt0,ot0,dt0))
-
-# Stacked Section bandpass and deconvolution
-#Flow('spik',stackedSection,
-#        '''
-#	bandpass fhi=50 flo=5 |
-#	agc |
-#        pef minlag=.004 maxlag=.140 pnoise=.3 mincorr=0 maxcorr=1.8 |
-#	fxdecon lenf=10 verb=1 n2w=481 fmin=5 fmax=125
-#        ''')
-
-Flow('spik',stackedSection,
-	'''
-	fxdecon lenf=4 verb=1 n2w=481 fmin=5 fmax=125 |
-	agc
-       ''')
-
-Plot('spik','grey title="Stacked Section"')
-
-Plot('zeroOffset_orig','grey title="Original Section"')
-Plot('zeroOffset_interp','agc | grey title="Interpolated Section"')
-
-Result('result',['zeroOffset_interp','spik'],'SideBySideIso')
 
 Flow('parametersCube4',parametersCube,
         '''
         put label2=t0 label3=m0 unit2=Km unit3=Km
-        n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+        n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g |
+	transp plane=12 | transp plane=23 |
+	smooth rect1=2 rect2=2
         '''%(nt0,dt0,ot0,nm0,dm0,om0))
+
+Flow('creTrajectories',[interpolatedDataCube,'parametersCube4'],
+	'''
+	cretrajec param=${SOURCES[1]} verb=y 
+	''')
+
+Flow('cretimecurves',['creTrajectories','parametersCube4'],
+	'''
+	getcretimecurve param=${SOURCES[1]} verb=y v0=%g
+	'''%(v0))
+
+Flow(stackedSection,[interpolatedDataCube,'creTrajectories','cretimecurves'],
+	'''
+	getcreandstack cremh=${SOURCES[1]} timeCurves=${SOURCES[2]} aperture=%d verb=y
+	''' % (aperture))
+
+Flow('stackedSectionDecon',stackedSection,
+	'''
+	bandpass fhi=50 flo=10 |
+	fxdecon lenf=4 verb=y n2w=962 fmin=5 fmax=125 |
+	agc
+       ''')
+
+Plot('stackedSectionDecon','grey title="Stacked Section"')
+
+Plot('zeroOffset_orig','grey title="Original Section"')
+Plot('zeroOffset_interp','agc | grey title="Interpolated Section"')
+
+Result('result',['zeroOffset_interp','stackedSectionDecon'],'SideBySideIso')
 
 End()
