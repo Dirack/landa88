@@ -112,40 +112,47 @@ float cubicInterface(float x)
 void test_firstDerivativeFunction()
 /*< Test first derivative numerical calculation >*/
 {
-	float fxph;
-	float fxmh;
-	float x[4]={0.,1.,2.,3.};
-	float dydx[4]={0.,-3.,0.,9.};
-	int i;
+	float fx[5];
+	float dfdx[5];
+	float x;
+	float ox=-3.14159;
+	float dx=0.01;
+	int nx=600;
+	int ix;
 
-	for(i=0;i<4;i++){
-		fxph = cubicInterface(x[i]+0.001);
-		fxmh = cubicInterface(x[i]-0.001);
-
-		TEST_ASSERT_FLOAT_WITHIN(0.01,dydx[i],first_deriv(0.001,fxph,fxmh));
+	for(ix=0;ix<nx;ix++){
+		x = ix*dx+ox;
+		fx[0]=sinf(x-2*0.01);
+		fx[1]=sinf(x-1*0.01);
+		fx[2]=sinf(x);
+		fx[3]=sinf(x+1*0.01);
+		fx[4]=sinf(x+2*0.01);
+		first_deriv(0.01,fx,dfdx);
+		TEST_ASSERT_FLOAT_WITHIN(0.01,cosf(x),dfdx[2]);
 	}
 }
 
 void test_secondDerivativeFunction()
 /*< Test second derivative numerical calculation >*/
 {
-	float fxm7h, fxm6h, fxm5h, fxm4h, fxm3h, fxm2h, fxmh, fx;
-	float x[4]={0.,1.,2.,3.};
-	float dydx[4]={6.,0.,6.,12.};
-	int i;
 
-	for(i=0;i<4;i++){
-		fxm7h = cubicInterface(x[i]-7*0.01);
-		fxm6h = cubicInterface(x[i]-6*0.01);
-		fxm5h = cubicInterface(x[i]-5*0.01);
-		fxm4h = cubicInterface(x[i]-4*0.01);
-		fxm3h = cubicInterface(x[i]-3*0.01);
-		fxm2h = cubicInterface(x[i]-2*0.01);
-		fxmh = cubicInterface(x[i]-0.01);
-		fx = cubicInterface(x[i]);
+	float fx[5];
+	float dfdx[5];
+	float x;
+	float ox=-3.14159;
+	float dx=0.01;
+	int nx=600;
+	int ix;
 
-		//TEST_ASSERT_FLOAT_WITHIN(0.01,dydx[i],second_deriv(0.001,fxp2h,fxph,fx));
-		printf("%f %f\n",dydx[i],second_deriv(0.01,fxm7h,fxm6h,fxm5h,fxm4h,fxm3h,fxm2h,fxmh,fx));
+	for(ix=0;ix<nx;ix++){
+		x = ix*dx+ox;
+		fx[0]=cosf(x-2*0.01);
+		fx[1]=cosf(x-1*0.01);
+		fx[2]=cosf(x);
+		fx[3]=cosf(x+1*0.01);
+		fx[4]=cosf(x+2*0.01);
+		first_deriv(0.01,fx,dfdx);
+		TEST_ASSERT_FLOAT_WITHIN(0.01,-1.*sinf(x),dfdx[2]);
 	}
 }
 
@@ -164,8 +171,41 @@ void test_calculateInterfaceCurvature()
 	//for(i=0;i<11;i++)
 	//	printf("%f ",cubicInterface(i*0.5-1.));
 	for(i=0;i<4;i++)
-		printf("k[%d]=%f\n",i,calculateInterfaceCurvature(it2,i));
+		printf("k[%d]=%f capa=%f\n",i,calculateInterfaceCurvature(it2,i),capa[i]);
 		//TEST_ASSERT_FLOAT_WITHIN(0.01,capa[i],calculateInterfaceCurvature(it2,i));
+}
+
+void test_sortingXinAscendingOrder()
+/*TODO*/
+{
+	int i;
+	float x[13]={4.27705002, 3.03945422, 3.26645589, 2.03656244, 2.27515054, 2.51043391, 2.78882909, 4.02767229, 1.50065649, 1.79396605,1.79396605, 3.51551676, 3.76459265};
+	float y[13]={0.966627121, 0.966370642, 0.963363767, 0.966482043, 0.974164248, 0.969641984, 0.972658157, 0.959083617, 0.972544372, 0.974167109, 0.974167109, 0.963503361, 0.969640553};
+	float xs[13]={1.50065649, 1.79396605, 1.79396605, 2.03656244, 2.27515054, 2.51043391, 2.78882909, 3.03945422, 3.26645589, 3.51551676,3.76459265, 4.02767229, 4.27705002};
+	float ys[13]={0.972544372, 0.974167109, 0.974167109, 0.966482043, 0.974164248, 0.969641984, 0.972658157, 0.966370642, 0.963363767,0.963503361, 0.969640553, 0.959083617, 0.966627121};
+	sortingXinAscendingOrder(x,y,13);
+	for(i=1;i<13;i++){
+		TEST_ASSERT_FLOAT_WITHIN(0.01,xs[i],x[i]);
+		TEST_ASSERT_FLOAT_WITHIN(0.01,ys[i],y[i]);
+	}
+}
+
+void test_binarySearch()
+/**/
+{
+	float x[10]={0.,1.,2.,3.,4.,5.,6.,7.,8.,9.};
+	TEST_ASSERT_EQUAL(4,binarySearch(4.5,x,10));
+	TEST_ASSERT_EQUAL(4,binarySearch(4.001,x,10));
+	TEST_ASSERT_EQUAL(4,binarySearch(4.999,x,10));
+	TEST_ASSERT_EQUAL(6,binarySearch(6.5,x,10));
+	TEST_ASSERT_EQUAL(6,binarySearch(6.001,x,10));
+	TEST_ASSERT_EQUAL(6,binarySearch(6.999,x,10));
+	TEST_ASSERT_EQUAL(0,binarySearch(0.5,x,10));
+	TEST_ASSERT_EQUAL(0,binarySearch(0.001,x,10));
+	TEST_ASSERT_EQUAL(0,binarySearch(0.999,x,10));
+	TEST_ASSERT_EQUAL(8,binarySearch(8.5,x,10));
+	TEST_ASSERT_EQUAL(8,binarySearch(8.001,x,10));
+	TEST_ASSERT_EQUAL(8,binarySearch(8.999,x,10));
 }
 
 int main(void){
@@ -175,8 +215,10 @@ int main(void){
 	RUN_TEST(test_getTransmitedRNIPHubralTransmissionLaw);
 	RUN_TEST(test_calculateIncidentAngle);
 	RUN_TEST(test_getVelocityForRaySampleLocation);*/
-	//RUN_TEST(test_firstDerivativeFunction);
+	RUN_TEST(test_firstDerivativeFunction);
 	//RUN_TEST(test_secondDerivativeFunction);
 	RUN_TEST(test_calculateInterfaceCurvature);
+	RUN_TEST(test_sortingXinAscendingOrder);
+	RUN_TEST(test_binarySearch);
 	return UNITY_END();
 }

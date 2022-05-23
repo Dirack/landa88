@@ -96,8 +96,11 @@ and x vector must be in crescent order.
 	for(i=0;i<n-1;i++){
 		ha = x[i+1]-x[i];
 		coef[0+i*4] = (s2[i+1]-s2[i])/(6*ha);
+		if(isnan(coef[0+i*4]) || isinf(coef[0+i*4])) coef[0+i*4]=0.;
 		coef[1+i*4] = s2[i]/2;
+		if(isnan(coef[1+i*4]) || isinf(coef[1+i*4])) coef[1+i*4]=0.;
 		coef[2+i*4] = (y[i+1]-y[i])/ha-(s2[i+1]+2*s2[i])*(ha/6);
+		if(isnan(coef[2+i*4]) || isinf(coef[2+i*4])) coef[2+i*4]=0.;
 		coef[3+i*4] = y[i];
 	}
 }

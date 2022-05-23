@@ -50,7 +50,7 @@ float getRandomNumberBetween0and1(){
 float getVfsaIterationTemperature(int iteration,float dampingFactor,float inicialTemperature){
 /*< Temperature function for VFSA algorithm >*/
 
-	return inicialTemperature*expf(-dampingFactor*pow(iteration,0.25));
+	return inicialTemperature*expf(-dampingFactor*pow(iteration,0.33));
 
 }
 
@@ -86,7 +86,7 @@ VFSA disturb parameters step.
 				
 	disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
-	disturbedVel[itf] = mod2d_getlayervel(mod,itf) + (disturbance*scale);
+	disturbedVel[itf] = mod2d_getlayervel(mod,itf) + (disturbance);
 
 	if (disturbedVel[itf] >= maxvel)
 		disturbedVel[itf] = maxvel - (maxvel-minvel) * getRandomNumberBetween0and1();
@@ -94,6 +94,7 @@ VFSA disturb parameters step.
 	if (disturbedVel[itf] <= minvel)
 		disturbedVel[itf] = (maxvel-minvel) * getRandomNumberBetween0and1() + minvel;
 
+//	if(itf==2) sf_warning("max=%f vel=%f min=%f",maxvel,disturbedVel[itf],minvel);
 	/* First layer velocity is fixed */
 	disturbedVel[0]=mod2d_getlayervel(mod,0);
 	disturbedVel[itf+1]=disturbedVel[itf];

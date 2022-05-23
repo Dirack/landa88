@@ -73,8 +73,9 @@ int main(int argc, char* argv[])
 	float *otbeta; // Optimized BETA parameter (radians)
 	float *otangles; // Optimized Normal ray angles (degrees)
 	mod2d mod;
-        float minvel[5]={1.45,1.65,1.73,1.8,1.9};
-        float maxvel[5]={1.55,1.73,1.78,1.9,2.2};
+        float minvel[5]={1.45,1.60,1.71,1.8,1.9};
+        float maxvel[5]={1.55,1.75,1.78,1.9,2.2};
+	float vf;
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -177,6 +178,7 @@ int main(int argc, char* argv[])
 	sz = sf_floatalloc(nsz);
 	sf_floatread(sz,nsz,sz_file);
 	sf_floatread(sv,nsv,vz_file);
+	vf = sv[nsv-1];
 
 	interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
 	mod = mod2d_init(nsv,sv,minvel,maxvel,nsz,osz,dsz,sz);
@@ -327,6 +329,10 @@ int main(int argc, char* argv[])
 	/* Number of NIP sources for each interface */
 	nx = ns/(nsv-1);
 
+	//disturbParameters(temp0,otsv,otsz,mod,0.1,itf);
+	//tmis0=calculateTimeMisfit(s,otsv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,otsz,nsz,osz,dsz,otsv,nsv);
+	//otmis=tmis0;
+
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
 	for (q=0; q<nit; q++){
 	
@@ -335,7 +341,7 @@ int main(int argc, char* argv[])
 						
 		/* parameter disturbance */
 
-		disturbParameters(temp,cnewv,cnewz,mod,0.001,itf);
+		disturbParameters(temp,cnewv,cnewz,mod,1,itf);
 		/* Function to update velocity model */
 		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
 
@@ -351,6 +357,8 @@ int main(int argc, char* argv[])
 				otsz[im]=cnewz[im];
 			for(im=0;im<itf+1;im++)
 				otsv[im]=cnewv[im];
+			#define UPDATE_CRS_PARAMETERS
+			#ifdef UPDATE_CRS_PARAMETERS
 			for(im=0;im<ns;im++){
 				otm0[im]=m0[im];
 				otm02[im][1]=m0[im];
@@ -358,11 +366,12 @@ int main(int argc, char* argv[])
 				otrnip[im]=RNIP[im];
 				otbeta[im]=BETA[im];
 			}
+			#endif
 			tmis0 = fabs(tmis);
 		}
 
 		/* VFSA parameters update condition */
-		deltaE = -fabs(tmis) - Em0;
+		deltaE = fabs(tmis) - Em0;
 		
 		/* Metrópolis criteria */
 		PM = expf(-deltaE/temp);
@@ -372,7 +381,7 @@ int main(int argc, char* argv[])
 				sz[im]=cnewz[im];
 			for(im=0;im<itf+1;im++)
 				mod2d_setlayervel(mod,im,cnewv[im]);
-			Em0 = -fabs(tmis);
+			Em0 = fabs(tmis);
 		} else {
 			u=getRandomNumberBetween0and1();
 			if (PM > u){
@@ -380,15 +389,16 @@ int main(int argc, char* argv[])
 					sz[im]=cnewz[im];
 				for(im=0;im<itf+1;im++)
 					mod2d_setlayervel(mod,im,cnewv[im]);
-				Em0 = -fabs(tmis);
+				Em0 = fabs(tmis);
 			}	
 		}	
 			
-		sf_warning("%d/%d interface=%d => Semblance(%f);",q+1,nit,itf,otmis);
+		sf_warning("%d/%d interface=%d => Semblance(%f) v=%f v=%f %f;",q+1,nit,itf,otmis,otsv[itf],cnewv[itf],tmis);
 
 	} /* loop over VFSA iterations */
 
 	/* Generate optimal velocity model */
+	otsv[nsv-1]=vf;
 	updateVelocityModel(n,o,d,otsv,nsv,otsz,nsz,osz,dsz,slow,nm);
 
 	/* Write velocity model file */

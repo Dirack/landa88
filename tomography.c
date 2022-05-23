@@ -34,6 +34,7 @@
 #define OFFSET_APERTURE 25
 #define CMP_APERTURE 10
 #define SEMBLANCE
+#define CRE_TIME_CURVE
 /*^*/
 
 float creTimeApproximation(float h, // Half-offset
@@ -167,7 +168,7 @@ Note: sumAmplitudes and sumAmplitudes2 variables are changed inside function
 
 		im = (int) (m/d[2]);
 
-		tetai = (int) ((double) creTimeApproximation(h,m,v0,t0,m0,RNIP,BETA,false)/d[0]);
+		tetai = (int) round((double) creTimeApproximation(h,m,v0,t0,m0,RNIP,BETA,false)/d[0]);
 
 		if(tetai > n[0] || tetai < 0){
 			sa += 0.;
@@ -332,10 +333,12 @@ sum of t=ts+tr.
 			BETA[is] = calculateBetaWithRayTrajectory(x,traj,it);
 
 			/* STACKING */
-			sumAmplitudes = 0.;
-			sumAmplitudes2 = 0.;
+			//sumAmplitudes = 0.;
+			//sumAmplitudes2 = 0.;
 			#ifdef CRE_TIME_CURVE
 			numSamples = stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
+			tmis += (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+			//tmis += sumAmplitudes;
 			#else
 			numSamples = stackOverCRETimeSurface(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
 			tmis += (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);

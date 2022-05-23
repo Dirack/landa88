@@ -211,16 +211,19 @@ to the interface will be the incident angle returned
 }
 
 
-float first_deriv( float h /* step */,
-		float fxph /* f(x+h)*/,
-		float fxmh /* f(x-h) */)
+void first_deriv( float h /* step */,
+		float zx[5] /* f(x)*/,
+		float der[5])
 /*< Calculate first derivative numerically >*/
 {
-	float diff;
-	diff=(fxph-fxmh);
+	int i;
 
-	if(fabs(diff)<h) return 0.;
-	return (diff)/(2*h);
+	sf_deriv_init(5, 6, 0.);
+        sf_deriv(zx,der);
+
+        for (i=0; i < 5; i++) {
+                der[i] /= h;
+        }
 }
 
 
@@ -247,45 +250,52 @@ float calculateInterfaceCurvature(
 	float kf; // Interface curvature
 	float f1, f2; // tmp variables
 	int is; // Spline index
+	int i;
 	itf2d it2; // Interface struct
 	float coef[4]; // Cubic spline coefficients matrix
 	float a, b, c, d; // Spline coefficients
-	float xp, xm;
-	float xm7h,xm6h,xm5h,xm4h,xm3h, xm2h, xmh;
+	//float xp, xm;
+	//float xm7h,xm6h,xm5h,xm4h,xm3h, xm2h, xmh;
+	float zx[5],dz1dx[5],dz2dx[5];
 
 	it2 = (itf2d) par;
 
 	is = (x-itf2d_o(it2))/itf2d_d(it2);
 	itf2d_getSplineCoefficients(it2,coef,is);
 
-	a = coef[0];
+	/*a = coef[0];
 	b = coef[1];
 	c = coef[2];
-	d = coef[3];
+	d = coef[3];*/
 
 	//f1 = 3*a*x*x+2*b*x+c;
-	xp = x+0.001;
-	xm = x-0.001;
+	//xp = x+0.001;
+	//xm = x-0.001;
 	//printf("x=%f xm=%f xp=%f\n",x,xm,xp);
-	f1 = first_deriv(0.001,getZCoordinateOfInterface(it2,xp),getZCoordinateOfInterface(it2,xm));
+	for(i=0;i<5;i++)
+		zx[i]=getZCoordinateOfInterface(it2,x-(i+2)*0.001);
+	first_deriv(0.001,zx,dz1dx);
+	first_deriv(0.001,dz1dx,dz2dx);
 	//f2 = fabs(6*a*x+2*b);
-	xm7h = getZCoordinateOfInterface(it2,x-7*0.01);
+	/*xm7h = getZCoordinateOfInterface(it2,x-7*0.01);
 	xm6h = getZCoordinateOfInterface(it2,x-6*0.01);
 	xm5h = getZCoordinateOfInterface(it2,x-5*0.01);
 	xm4h = getZCoordinateOfInterface(it2,x-4*0.01);
 	xm3h = getZCoordinateOfInterface(it2,x-3*0.01);
 	xm2h = getZCoordinateOfInterface(it2,x-2*0.01);
-	xmh = getZCoordinateOfInterface(it2,x-0.01);
-	x = getZCoordinateOfInterface(it2,x);
+	xmh = getZCoordinateOfInterface(it2,x-0.01);*/
+	//x = getZCoordinateOfInterface(it2,x);
 
-	f2 = second_deriv(0.01,xm7h,xm6h,xm5h,xm4h,xm3h,xm2h,xmh,x);
+	f1 = dz1dx[2];
+	f2 = fabs(dz2dx[2]);
+	//printf("is=%d f1=%f f2=%f ",is,f1,f2);
 	//f2 = second_deriv(0.01,a*xp*xp*xp+b*xp*xp+c*xp+d,a*xm*xm*xm+b*xm*xm+c*xm+d,a*x*x*x+b*x*x+c*x+d);
 	//f2 = 6.;
 	//f2 = 6*a*x+2*b;
-	printf("is=%d f1=%f f2=%f\n",is,f1,f2);
 	f1 = 1+f1*f1;
 	f1 = f1*f1*f1;
 	kf = f2/(sqrtf(f1));
+	printf("kf=%f\n",kf);
 
 	/*zx = a*x*x*x+b*x*x+c*x+d;
 	x = x+0.01;
@@ -324,6 +334,9 @@ void transmitedRNIPThroughInterface(
 					void *par, /* Raytrace struct */
 					void *interface, /* Interface struct */
 					int *ir, /* ray sample index */
+					int length,
+					float vi,
+					float vt,
 					float **traj, /* ray trajectory */
 					float *rnip /* RNIP parameter */)
 /*< Calculate transmited RNIP parameter through interface using Hubral laws
@@ -332,8 +345,8 @@ the interface, in this zone is applied transmission law where the ray passes
 through interface
 >*/
 {
-	float vi; // Velocity - incident ray layer
-	float vt=0.; // Velocity - transmited ray layer
+	//float vi; // Velocity - incident ray layer
+	//float vt=0.; // Velocity - transmited ray layer
 	raytrace rt; // Raytrace struct
 	itf2d it2; // Interface struct
 	float zi; // Interface z coordinate
@@ -344,25 +357,25 @@ through interface
 	rt = (raytrace) par;
 	it2 = (itf2d) interface;
 
-	vi = getVelocityForRaySampleLocation(rt,traj,*ir);
+	//vi = getVelocityForRaySampleLocation(rt,traj,*ir);
 
-	vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
+	//vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
 	
-	while(vi!=vt){
-		*rnip+=2*vt*rt->dt;
+	//while(vi!=vt){
+	//	*rnip+=2*vt*rt->dt;
 
-		vi = vt;
+	//	vi = vt;
 
-		vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
-		zi = getZCoordinateOfInterface(it2,traj[*ir][1]);
-		if(zi>traj[*ir][0] && pass==false){
-			ei = calculateIncidentAngle(it2,traj,*ir-1);
-			kf = calculateInterfaceCurvature(it2,traj[*ir][1]);
+	//	vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
+		zi = getZCoordinateOfInterface(it2,traj[*ir+length/2][1]);
+	//	if(zi>traj[*ir][0] && pass==false){
+			ei = calculateIncidentAngle(it2,traj,*ir-1+length/2);
+			kf = calculateInterfaceCurvature(it2,traj[*ir+length/2][1]);
 			getTransmitedRNIPHubralTransmissionLaw(rnip,vt,vi,ei,kf);
 			pass = true;
-			vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
-		}
-	}
+			//vt = getVelocityForRaySampleLocation(rt,traj,++(*ir));
+	//	}
+	//}
 
 }
 
@@ -388,6 +401,9 @@ float calculateRNIPWithHubralLaws(
 	float *x; // (z,x) position vector
 	float* szz; // Z coordinates of interface being inverted
 	itf2d interface; // Interface struct
+	float zr, zi, vel;
+	int length=0, it;
+	int pass=0;
 
 	szz = sf_floatalloc(nsz/(nv-1));
 
@@ -406,19 +422,43 @@ float calculateRNIPWithHubralLaws(
 		vt = sqrtf(1./grid2_vel(rt->grd2,x));
 
 		/* If the ray reaches interface use transmission law */
-		if(vt!=vi){
+		/*if(vt!=vi){
 			// TODO: This loop could be outside this if?
 			for(j=0;j<nsz/(nv-1);j++){
 				szz[j]=sz[j+((itf-1)*nsz/(nv-1))];
 			}
 			interface = itf2d_init(szz,nsz/(nv-1),osz,dsz);
-			transmitedRNIPThroughInterface(rt,interface,&i,traj,&rnip);
-			vi=vt;
-		}
+			//zr=x[0];
+			//zi=getZCoordinateOfInterface(interface,x[1]);
+			vi=v[itf];
+			vt=v[itf-1];
 
-		/* Propagation law */
-		rnip+=2*vt*rt->dt;
+			length=0;
+			// Get transition zone length
+			for(it=i;it<i+20;it++){
+				x[0]=traj[it][0];
+				x[1]=traj[it][1];
+				vel=sqrt(1./grid2_vel(rt->grd2,x));
+				if(vel!=v[itf-1]){
+					length++;
+				}else{
+					break;
+				}
+			}
+
+			transmitedRNIPThroughInterface(rt,interface,&i,length,vi,vt,traj,&rnip);
+			//sf_warning("pass vi=%f vt=%f length=%d",vi,vt,length); pass++;
+			vi=vt;
+			i+=length;
+		}else{*/
+
+			/* Propagation law */
+			rnip+=2*vt*rt->dt;
+			//if(itf==1) sf_warning("vt=%f vi=%f",vt,vi);
+		//}
 	}
+
+	//if(itf==1) sf_error("capa");
 
 	return rnip;
 }
@@ -446,6 +486,29 @@ void sortingXinAscendingOrder(
 	}while(k!=0);
 }
 
+int binarySearch(float xx, float *x, int n)
+/*<TODO>*/
+{
+	int ini=0;
+	int fin=n-1;
+	int meio=0;
+	int l=-1;
+
+	do{
+		meio=(ini+fin)/2;
+		if(xx>x[meio]){
+			ini=meio;
+			if(xx<x[meio+1])
+				l=meio;
+		}else{
+			fin=meio;
+			if(xx>x[meio-1])
+				l=meio-1;
+		}
+	}while(l==-1);
+	return l;
+}
+
 void interfaceInterpolationFromNipSources(float **s, /* NIP sources */
 					  int ns, /* Number of NIP sources */
 					  float *sz, /* Spline nodepoints */
@@ -470,7 +533,7 @@ Note: If the velocity model is correct the NIP sources location coincides with i
 	tsz = sf_floatalloc(nxs);
 	coef = sf_floatalloc(4*(nxs-1));
 
-	for(i=0;i<(nsv-1);i++){
+	/*for(i=0;i<(nsv-1);i++){
 		l=0;
 		for(im=0;im<nxs;im++){
 			tsz[im]=s[i*nxs+im][0];
@@ -488,6 +551,28 @@ Note: If the velocity model is correct the NIP sources location coincides with i
 					l++;
 					oxs=tsx[l];
 				}
+				xs=xx-oxs;
+				sz[i*nxsz+im]=coef[l*4+0]*xs*xs*xs+coef[l*4+1]*xs*xs+coef[l*4+2]*xs+coef[l*4+3];
+			}
+		}
+	}*/
+	for(i=0;i<(nsv-1);i++){
+		for(im=0;im<nxs;im++){
+			tsz[im]=s[i*nxs+im][0];
+			tsx[im]=s[i*nxs+im][1];
+		}
+		sortingXinAscendingOrder(tsx,tsz,nxs);
+		calculateSplineCoeficients(nxs,tsx,tsz,coef);
+		oxs=tsx[0];
+		for(im=0;im<nxsz;im++){
+			xx=im*dsz+osz;
+			if(xx<tsx[0]){
+				//sz[i*nxsz+im]=tsz[0];
+			}else if(xx>tsx[nxs-1]){
+				//sz[i*nxsz+im]=tsz[nxs-1];
+			}else{
+				l = binarySearch(xx,tsx,nxs); 
+				oxs=tsx[l];
 				xs=xx-oxs;
 				sz[i*nxsz+im]=coef[l*4+0]*xs*xs*xs+coef[l*4+1]*xs*xs+coef[l*4+2]*xs+coef[l*4+3];
 			}

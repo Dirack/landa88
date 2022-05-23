@@ -5,7 +5,7 @@
 # source gdb_script1
 
 cd landa88tomo
-set args <model_6_0.rsf shotsfile=nipsources_1.rsf anglefile=angles_1.rsf t0s=t0s.rsf m0s=m0s.rsf rnips=rnips.rsf betas=betas.rsf sz=sz_2.rsf vz=sv_2.rsf zspline=zspline_1.rsf vspline=vspline_1.rsf misfit=misfit_1.rsf misinv=misfit_1_0.rsf itf=0 data=interpolatedDataCube2.rsf nit=50 t0sout=t0sout_1.rsf m0sout=m0sout_1.rsf rnipsout=rnipsout_1.rsf betasout=betasout_1.rsf shotsout=shotsout_1.rsf anglesout=anglesout_1.rsf > model_1.rsf
+set args <model_2_0.rsf shotsfile=nipsources_1.rsf anglefile=angles_1.rsf t0s=t0s.rsf m0s=m0s.rsf rnips=rnips.rsf betas=betas.rsf sz=sz_2.rsf vz=sv_2.rsf zspline=zspline_1.rsf vspline=vspline_1.rsf misfit=misfit_1.rsf misinv=misfit_1_0.rsf itf=0 data=interpolatedDataCube2.rsf nit=50 t0sout=t0sout_1.rsf m0sout=m0sout_1.rsf rnipsout=rnipsout_1.rsf betasout=betasout_1.rsf shotsout=shotsout_1.rsf anglesout=anglesout_1.rsf > model_1.rsf
 show args
 #b vfsacrsnh_lib.c:102
 #b model2d.c:110
