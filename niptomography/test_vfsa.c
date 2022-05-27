@@ -55,8 +55,8 @@ void test_vfsaOptimization()
         s[0][1]=5.;
 
  	v = vfsaOptimization( s,  ns,  m0,  t0,  a,  n,  o,  d,  slow, BETA,  RNIP,  v0,  data,  data_n,  data_o,   data_d, 1.3262);
-	printf("v=%f\n",v);
 
+	TEST_ASSERT_FLOAT_WITHIN(0.01,1.508,v);
 }
 
 int main(int argc, char* argv[]){
