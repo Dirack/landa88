@@ -57,6 +57,7 @@ void test_forwardModelingInConstantVelocityModel()
 	int i;
 	float *BETA;
 	float *RNIP;
+	float vv[2]={1.508,1.508};
 
 	s = sf_floatalloc2(2,ns);
 	BETA = sf_floatalloc(ns);
@@ -77,7 +78,7 @@ void test_forwardModelingInConstantVelocityModel()
 	s[3][0]=0.5;
 	s[3][1]=2.5;
 
-	forwardModeling(s,ns,m0,t0,a,n,d,o,slow,BETA,RNIP);
+	forwardModeling(s,ns,m0,t0,a,n,d,o,slow,BETA,RNIP,vv,2,1);
 
 	/* Test for t0, m0 */
 	for(i=0;i<ns;i++){
@@ -105,6 +106,7 @@ void test_forwardModelingInTwoLayersModel()
 	int i;
 	float *BETA;
 	float *RNIP;
+	float vv[2]={2.0,2.5};
 
 	s = sf_floatalloc2(2,ns);
 	BETA = sf_floatalloc(ns);
@@ -125,14 +127,14 @@ void test_forwardModelingInTwoLayersModel()
 	s[3][0]=1.5;
 	s[3][1]=2.5;
 
-	forwardModeling(s,ns,m0,t0,a,n,d,o,slow2,BETA,RNIP);
+	forwardModeling(s,ns,m0,t0,a,n,d,o,slow2,BETA,RNIP,vv,2,1);
 
 	/* Test for t0, m0 */
 	for(i=0;i<ns;i++){
 		TEST_ASSERT_FLOAT_WITHIN(0.01,2*((1./2.)+(0.5/2.5)),t0[i]);
 		TEST_ASSERT_FLOAT_WITHIN(0.01,s[i][1],m0[i]);
 		TEST_ASSERT_FLOAT_WITHIN(0.01,a[i]*SF_PI/180.,BETA[i]);
-		TEST_ASSERT_FLOAT_WITHIN(0.01,2*1.5,RNIP[i]);
+		TEST_ASSERT_FLOAT_WITHIN(0.05,3.25,RNIP[i]);
 	}
 
 	free(BETA);
