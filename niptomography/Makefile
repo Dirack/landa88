@@ -13,7 +13,7 @@
 # License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
 DEP= ../raytrace.c ../grid2.c ../atela.c ../dynamic.c ../interface2d.c ../layer2d.c ../model2d.c
-TESTS= test_setup.x test_forward.x test_datamis.x test_vfsa.x
+TESTS= test_setup.x test_forward.x test_datamis.x test_vfsa.x test_rungekutta.x
 
 all:	$(TESTS)
 
@@ -33,5 +33,8 @@ test_vfsa.x:	test_vfsa.c ../grid2.c ../atela.c ../dynamic.c ../interface2d.c Uni
 	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
 	./$@ && rm $@
 
+test_rungekutta.x:	test_rungekutta.c ../grid2.c ../atela.c ../interface2d.c Unity/unity.c
+	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
+	./$@ && rm $@
 
 .PHONY:	$(TESTS)
