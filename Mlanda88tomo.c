@@ -73,9 +73,14 @@ int main(int argc, char* argv[])
 	float *otbeta; // Optimized BETA parameter (radians)
 	float *otangles; // Optimized Normal ray angles (degrees)
 	mod2d mod;
-        float minvel[5]={1.45,1.60,1.71,1.8,1.9};
-        float maxvel[5]={1.55,1.75,1.78,1.9,2.2};
+        float minvel[5]={1.45,1.60,1.72,1.8,1.9};
+        float maxvel[5]={1.55,1.75,1.80,1.9,2.2};
 	float vf;
+	float *t0p;
+	float *m0p;
+	float *RNIPp;
+	float *BETAp;
+	float *ota;
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -214,6 +219,11 @@ int main(int argc, char* argv[])
 	otbeta = sf_floatalloc(ns);
 	otangles = sf_floatalloc(ns);
 	sf_floatread(BETA,ns,betas);
+	t0p = sf_floatalloc(ns);
+	m0p = sf_floatalloc(ns);
+	RNIPp = sf_floatalloc(ns);
+	BETAp = sf_floatalloc(ns);
+	ota = sf_floatalloc(ns);
 
 	for(im=0;im<ns;im++){
 		otm0[im]=m0[im];
@@ -222,6 +232,11 @@ int main(int argc, char* argv[])
 		ott0[im]=t0[im];
 		otrnip[im]=RNIP[im];
 		otbeta[im]=BETA[im];
+		ota[im]=a[im];
+		t0p[im]=t0[im];
+		m0p[im]=m0[im];
+		RNIPp[im]=RNIP[im];
+		BETAp[im]=BETA[im];
 	}
 
 	/* get slowness squared (Background model) */
@@ -330,7 +345,17 @@ int main(int argc, char* argv[])
 	nx = ns/(nsv-1);
 
 	//disturbParameters(temp0,otsv,otsz,mod,0.1,itf);
+	/* Setup NIP sources */
+	//modelSetup(s, nx,  m0, t0, a,  itf,  n,  d,  o,  slow);
 	//tmis0=calculateTimeMisfit(s,otsv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,otsz,nsz,osz,dsz,otsv,nsv);
+
+	//for(im=0;im<ns;im++){
+	//	tmis0 += fabs(t0[im]-t0p[im]);
+	//	tmis0 += fabs(m0[im]-m0p[im]);
+		//sf_warning("tmis0=%f t0=%f t0p=%f",tmis0,t0[im],t0p[im]);
+	//}
+	//tmis0=10;
+	//sf_error("oi");
 	//otmis=tmis0;
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
@@ -340,8 +365,17 @@ int main(int argc, char* argv[])
 		temp=getVfsaIterationTemperature(q,c0,temp0);
 						
 		/* parameter disturbance */
-
 		disturbParameters(temp,cnewv,cnewz,mod,1,itf);
+
+		/* Function to update velocity model */
+		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
+
+		/* Setup NIP sources */
+		modelSetup(s, nx,  m0, t0, a,  itf,  n,  d,  o,  slow);
+
+		/**/
+		interfaceInterpolationFromNipSources(s,nshot,cnewz,nsz,osz,dsz,nsv);
+
 		/* Function to update velocity model */
 		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
 
@@ -350,7 +384,14 @@ int main(int argc, char* argv[])
 		/* Calculate time misfit through forward modeling */		
 		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv,nsv);
 
+		//for(im=0;im<ns;im++){
+		//	tmis += fabs(t0[im]-t0p[im])*fabs(t0[im]-t0p[im]);
+		//	tmis += fabs(m0[im]-m0p[im])*fabs(m0[im]-m0p[im]);
+			//tmis += fabs(RNIP[im]-RNIPp[im])*fabs(RNIP[im]-RNIPp[im]);
+			//tmis += fabs(BETA[im]-BETAp[im])*fabs(BETA[im]-BETAp[im]);
+		//}
 		if(fabs(tmis) > fabs(tmis0) ){
+			//sf_warning("tmis=%f v=%f",tmis,cnewv[itf]);
 			otmis = fabs(tmis);
 			/* optimized parameters */
 			for(im=0;im<nsz;im++)
@@ -365,9 +406,18 @@ int main(int argc, char* argv[])
 				ott0[im]=t0[im];
 				otrnip[im]=RNIP[im];
 				otbeta[im]=BETA[im];
+				ota[im]=a[im];
 			}
 			#endif
 			tmis0 = fabs(tmis);
+		}else{
+			for(im=0;im<ns;im++){
+				m0[im]=otm0[im];
+				t0[im]=ott0[im];
+				RNIP[im]=otrnip[im];
+				BETA[im]=otbeta[im];
+				a[im]=ota[im];
+			}
 		}
 
 		/* VFSA parameters update condition */
@@ -390,7 +440,15 @@ int main(int argc, char* argv[])
 				for(im=0;im<itf+1;im++)
 					mod2d_setlayervel(mod,im,cnewv[im]);
 				Em0 = fabs(tmis);
-			}	
+			}/*else{
+				for(im=0;im<ns;im++){
+					m0[im]=otm0[im];
+					t0[im]=ott0[im];
+					RNIP[im]=otrnip[im];
+					BETA[im]=otbeta[im];
+					a[im]=ota[im];
+				}
+			}*/
 		}	
 			
 		sf_warning("%d/%d interface=%d => Semblance(%f) v=%f v=%f %f;",q+1,nit,itf,otmis,otsv[itf],cnewv[itf],tmis);

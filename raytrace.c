@@ -212,33 +212,33 @@ to the interface will be the incident angle returned
 
 
 void first_deriv( float h /* step */,
-		float zx[5] /* f(x)*/,
-		float der[5])
+		float *zx /* f(x) */,
+		float *der /* Derivative */,
+		int n /* vectors dim */)
 /*< Calculate first derivative numerically >*/
 {
 	int i;
 
-	sf_deriv_init(5, 6, 0.);
+	sf_deriv_init(n, 6, 0.);
         sf_deriv(zx,der);
 
-        for (i=0; i < 5; i++) {
+        for (i=0; i < n; i++) {
                 der[i] /= h;
         }
 }
 
 
-float second_deriv( float h /* passo h */,
-		float fxm7h /* f(x-3h) */,
-		float fxm6h /* f(x-3h) */,
-		float fxm5h /* f(x-3h) */,
-		float fxm4h /* f(x-3h) */,
-		float fxm3h /* f(x-3h) */,
-		float fxm2h /* f(x-2h)*/,
-		float fxmh /* f(x-h) */,
-		float fx /* f(x) */)
-/*< Calcular a derivada da função utilizando o método das diferenças finitas >*/
+void second_deriv( float h /* passo h */,
+		    float *zx /* f(x) */,
+		    float *der /* Derivative */,
+		    int n /* vectors dim */)
+/*< Calculate second derivative numerically >*/
 {
-	return ((469./90.)*fx+(-223./10.)*fxmh+(879./20.)*fxm2h+(-949./18.)*fxm3h+41.*fxm4h+(-201./10.)*fxm5h+(1019./180.)*fxm6h+(-7./10.)*fxm7h)/(h*h);
+	float *firstder;
+	firstder = sf_floatalloc(n);
+	first_deriv(h,zx,firstder,n);
+	first_deriv(h,firstder,der,n);
+	free(firstder);
 }
 
 float calculateInterfaceCurvature(
@@ -274,8 +274,8 @@ float calculateInterfaceCurvature(
 	//printf("x=%f xm=%f xp=%f\n",x,xm,xp);
 	for(i=0;i<5;i++)
 		zx[i]=getZCoordinateOfInterface(it2,x-(i+2)*0.001);
-	first_deriv(0.001,zx,dz1dx);
-	first_deriv(0.001,dz1dx,dz2dx);
+	first_deriv(0.001,zx,dz1dx,5);
+	first_deriv(0.001,dz1dx,dz2dx,5);
 	//f2 = fabs(6*a*x+2*b);
 	/*xm7h = getZCoordinateOfInterface(it2,x-7*0.01);
 	xm6h = getZCoordinateOfInterface(it2,x-6*0.01);
@@ -422,7 +422,7 @@ float calculateRNIPWithHubralLaws(
 		vt = sqrtf(1./grid2_vel(rt->grd2,x));
 
 		/* If the ray reaches interface use transmission law */
-		/*if(vt!=vi){
+		if(vt!=vi){
 			// TODO: This loop could be outside this if?
 			for(j=0;j<nsz/(nv-1);j++){
 				szz[j]=sz[j+((itf-1)*nsz/(nv-1))];
@@ -446,16 +446,18 @@ float calculateRNIPWithHubralLaws(
 				}
 			}
 
-			transmitedRNIPThroughInterface(rt,interface,&i,length,vi,vt,traj,&rnip);
+			//transmitedRNIPThroughInterface(rt,interface,&i,length,vi,vt,traj,&rnip);
 			//sf_warning("pass vi=%f vt=%f length=%d",vi,vt,length); pass++;
+			rnip = 2*(vi/vt)*rnip;
 			vi=vt;
+			//rnip += length*vt*rt->dt;
 			i+=length;
-		}else{*/
+		}else{
 
 			/* Propagation law */
 			rnip+=2*vt*rt->dt;
 			//if(itf==1) sf_warning("vt=%f vi=%f",vt,vi);
-		//}
+		}
 	}
 
 	//if(itf==1) sf_error("capa");

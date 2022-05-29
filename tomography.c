@@ -31,10 +31,11 @@
 #endif
 /*^*/
 
-#define OFFSET_APERTURE 25
+#define OFFSET_APERTURE 50
 #define CMP_APERTURE 10
 #define SEMBLANCE
 #define CRE_TIME_CURVE
+#define DT 0.001
 /*^*/
 
 float creTimeApproximation(float h, // Half-offset
@@ -126,6 +127,7 @@ Note: x is changed inside the function
 	calculateEscapeVector(x,traj,it);
 	xx=sqrt(x[0]*x[0]+x[1]*x[1]);
 	xx=acos(-x[0]/xx);
+	if(x[1]<0) xx = -xx;
 	return xx;
 }
 
@@ -301,6 +303,7 @@ sum of t=ts+tr.
 	float sumAmplitudes=0.; // Amplitudes sum
 	float sumAmplitudes2=0.; // Amplitudes sum squared
 	int numSamples=1; // Number of samples
+	float t0p;
 
 	x = sf_floatalloc(2);
 
@@ -308,7 +311,8 @@ sum of t=ts+tr.
 	rt = raytrace_init(2,true,nt,dt,n,o,d,slow,ORDER);
 	traj = sf_floatalloc2(2,nt+1);
 
-	for(is=(itf*ns);is<(itf*ns+ns);is++){
+	for(is=(itf*ns); is<(itf*ns+ns); is++){
+		t0p = t0[is];
 
 		normalRayAngleRad = a[is]*DEG2RAD;
 
@@ -321,10 +325,11 @@ sum of t=ts+tr.
 		if(it>0){ // Ray endpoint at acquisition surface
 
 			m0[is]= x[1];
-			t0[is] = 2*it*dt;
+			t0[is]= 2*it*dt;
 
                         /* Calculate RNIP */
-			RNIP[is] = calculateRNIPWithHubralLaws(rt,traj,it,vv,nv,t0[is],itf,sz,nsz,osz,dsz);
+			//RNIP[is] = calculateRNIPWithHubralLaws(rt,traj,it,vv,nv,t0[is],itf,sz,nsz,osz,dsz);
+			RNIP[is] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
 
 			if(RNIP[is]<0.0)
 				sf_warning("ERROR: RNIP=%f",RNIP[is]);
@@ -337,7 +342,11 @@ sum of t=ts+tr.
 			//sumAmplitudes2 = 0.;
 			#ifdef CRE_TIME_CURVE
 			numSamples = stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
-			tmis += (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+			if(sumAmplitudes2<0.00001 || t0[is]>t0p+0.4 || t0[is] < t0p-0.4){
+				tmis += 0.;
+			}else{
+				tmis += (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);
+			}
 			//tmis += sumAmplitudes;
 			#else
 			numSamples = stackOverCRETimeSurface(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
@@ -366,3 +375,75 @@ sum of t=ts+tr.
 	return tmis;
 }
 
+void modelSetup(float **s,int ns, float *m0, float *t0, float* a, int itf, int *n, float *d, float *o, float *slow)
+/*< TODO >*/
+{
+
+	float x[2];
+	float p[2];
+	float t;
+	raytrace rt;
+	float **traj;
+	int nt;
+	int it;
+	int i;
+	int ir;
+
+	for(ir=(itf*ns); ir<(itf*ns+ns); ir++){
+
+		/* initialize ray tracing object */
+		nt = (int) (t0[ir]/(2*DT));
+		rt = raytrace_init(2,true,nt,DT,n,o,d,slow,ORDER);
+
+		/* Ray tracing */
+		traj = sf_floatalloc2(2,nt+1);
+		
+		/* initialize position */
+		x[0] = 0.; 
+		x[1] = m0[ir];
+
+		/* initialize direction */
+		a[ir]=(a[ir]+180)*DEG2RAD;
+		p[0] = -cosf(a[ir]);
+		p[1] = sinf(a[ir]);
+
+		it = trace_ray (rt, x, p, traj);
+
+		/* write ray end points */
+		s[ir][0]=traj[nt-1][0];
+		s[ir][1]=traj[nt-1][1];
+		//sf_warning("z=%f\n",s[ir][0]);
+		//sf_warning("x=%f\n",s[ir][1]);
+
+		/* write escape angles */
+		if(it!=0){
+                        sf_warning("BAD RAY ANGLE IN NIP MODEL SETUP");
+                        sf_warning("From: x=0. z=%f",m0[ir]);
+                        sf_warning("To: x=%f z=%f",s[ir][0],s[ir][1]);
+                        sf_warning("Starting angle: %f",a[ir]*180./SF_PI-180);
+                        sf_warning("Escape angle: %f",a[ir]*180./SF_PI);
+			sf_error("%s: %s",__FILE__,__LINE__);
+		}else{
+                        /* Escape vector */
+                        it=nt-1;
+                        i=it-2;
+                        x[0]=traj[it][0];
+                        x[1]=traj[it][1];
+                        x[0]-=traj[i][0];
+                        x[1]-=traj[i][1];
+                        /* Dot product with unit vector pointing upward */
+                        t = sqrt(x[0]*x[0]+x[1]*x[1]); /* Length */
+                        t = acos(x[0]/t);
+                        if(x[1]>0) t = -t;
+
+                        a[ir] = t*180./SF_PI;
+
+			//sf_warning("a=%f\n",a[ir]);
+		}
+
+		/* Raytrace close */
+		raytrace_close(rt);
+		free(traj);
+	}
+
+}
