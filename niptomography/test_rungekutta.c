@@ -127,7 +127,7 @@ void test_getRNIPUsingDynamicRayTracingInTwoLayersVelocityModelForBendingRay(){
         raytrace rt;
         float **traj;
         float normalRayAngleRad;
-	float a[1]={31,};
+	float a[1]={20,};
         int nt=10000;
         float dt=0.001;
         int it;

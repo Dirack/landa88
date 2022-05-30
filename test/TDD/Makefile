@@ -12,7 +12,9 @@
 # 
 # License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
-all:	test_interface2d.x test_raytrace.x test_tomography.x test_model2d.x test_layer2d.x
+TESTS=test_interface2d.x test_raytrace.x test_tomography.x test_model2d.x test_layer2d.x
+
+all:	$(TESTS)
 
 test_interface2d.x:	test_interface2d.c ../../interface2d.c Unity/unity.c
 	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf
@@ -38,3 +40,5 @@ clean:
 
 help:
 	@echo "Use 'make' to run the tests"
+
+.PHONY: $(TESTS)

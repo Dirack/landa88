@@ -342,7 +342,7 @@ sum of t=ts+tr.
 			//sumAmplitudes2 = 0.;
 			#ifdef CRE_TIME_CURVE
 			numSamples = stackOverCRETimeCurve(RNIP[is],BETA[is],m0[is],t0[is],v0,&sumAmplitudes,&sumAmplitudes2,data,data_n,data_o,data_d);
-			if(sumAmplitudes2<0.00001 || t0[is]>t0p+0.4 || t0[is] < t0p-0.4){
+			if(sumAmplitudes2<0.00001 || t0[is]>t0p+0.4 || t0[is] < t0p-0.4 || RNIP[is] < 0.){
 				tmis += 0.;
 			}else{
 				tmis += (sumAmplitudes*sumAmplitudes)/(numSamples*sumAmplitudes2);

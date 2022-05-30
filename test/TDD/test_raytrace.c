@@ -127,7 +127,7 @@ void test_firstDerivativeFunction()
 		fx[2]=sinf(x);
 		fx[3]=sinf(x+1*0.01);
 		fx[4]=sinf(x+2*0.01);
-		first_deriv(0.01,fx,dfdx);
+		first_deriv(0.01,fx,dfdx,5);
 		TEST_ASSERT_FLOAT_WITHIN(0.01,cosf(x),dfdx[2]);
 	}
 }
@@ -143,16 +143,14 @@ void test_secondDerivativeFunction()
 	float dx=0.01;
 	int nx=600;
 	int ix;
+	int j;
 
 	for(ix=0;ix<nx;ix++){
 		x = ix*dx+ox;
-		fx[0]=cosf(x-2*0.01);
-		fx[1]=cosf(x-1*0.01);
-		fx[2]=cosf(x);
-		fx[3]=cosf(x+1*0.01);
-		fx[4]=cosf(x+2*0.01);
-		first_deriv(0.01,fx,dfdx);
-		TEST_ASSERT_FLOAT_WITHIN(0.01,-1.*sinf(x),dfdx[2]);
+		for(j=0;j<5;j++)
+			fx[j]=sinf(x+(j-2)*0.01);
+		second_deriv(0.01,fx,dfdx,5);
+		TEST_ASSERT_FLOAT_WITHIN(0.01,-sinf(x),dfdx[2]);
 	}
 }
 
@@ -168,11 +166,8 @@ void test_calculateInterfaceCurvature()
 
 	it2 = itf2d_init(y,10,-1,0.5);
 
-	//for(i=0;i<11;i++)
-	//	printf("%f ",cubicInterface(i*0.5-1.));
 	for(i=0;i<4;i++)
-		printf("k[%d]=%f capa=%f\n",i,calculateInterfaceCurvature(it2,i),capa[i]);
-		//TEST_ASSERT_FLOAT_WITHIN(0.01,capa[i],calculateInterfaceCurvature(it2,i));
+		TEST_ASSERT_FLOAT_WITHIN(0.1,capa[i],calculateInterfaceCurvature(it2,i));
 }
 
 void test_sortingXinAscendingOrder()
@@ -216,7 +211,7 @@ int main(void){
 	RUN_TEST(test_calculateIncidentAngle);
 	RUN_TEST(test_getVelocityForRaySampleLocation);*/
 	RUN_TEST(test_firstDerivativeFunction);
-	//RUN_TEST(test_secondDerivativeFunction);
+	RUN_TEST(test_secondDerivativeFunction);
 	RUN_TEST(test_calculateInterfaceCurvature);
 	RUN_TEST(test_sortingXinAscendingOrder);
 	RUN_TEST(test_binarySearch);
