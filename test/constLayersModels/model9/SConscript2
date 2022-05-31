@@ -1,0 +1,81 @@
+from rsf.proj import *
+
+# Main Files
+trueModel='trueModel'
+stackedSection='stackedSection'
+parametersCube='parametersCube'
+dataCube='dataCube'
+interpolatedDataCube='interpolatedDataCube2'
+
+# VFSA Parameters
+v0 = float(ARGUMENTS.get('v0',1.5))
+ot0 = float(ARGUMENTS.get('ot0',0.3))
+dt0 = float(ARGUMENTS.get('dt0',0.004))
+nt0 = int(ARGUMENTS.get('nt0',451))
+dm0 = float(ARGUMENTS.get('dm0',0.00625))
+om0 = [1.5,2.26250]
+nm0 = [121,100]
+n2 = [121*451,45100]
+f2 = [0,63591]
+aperture = int(ARGUMENTS.get('aperture',20))
+cds = bool(ARGUMENTS.get('cds',False))
+
+for i in range(1):
+
+	nmm = nm0[i]
+	omm = om0[i]
+
+	Flow(parametersCube+str(i),parametersCube,
+		'''
+		window n2=%d f2=%d |
+		put o2=0
+		''' %(n2[i],f2[i]))
+
+	Flow('creTrajectories'+str(i),[interpolatedDataCube,parametersCube+str(i)],
+		'''
+		cretrajec param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y 
+		'''%(nmm,omm,dm0,nt0,ot0,dt0))
+
+	Flow(['cregathers'+str(i),'mhCoordinates'+str(i)],[interpolatedDataCube,'creTrajectories'+str(i)],
+		'''
+		getcregather cremh=${SOURCES[1]} m=${TARGETS[1]} aperture=%d nm0=%g nt0=%g |
+		put label1=Time unit1=s label2=Offset unit2=Km label3=t0 unit3=s
+		label4=m0 unit4=Km n3=%d d3=%g o3=%g n4=%d d4=%g o4=%g
+		''' % (aperture,nmm,nt0,nt0,dt0,ot0,nmm,dm0,omm))
+
+	Flow('cretimecurves'+str(i),['mhCoordinates'+str(i),parametersCube+str(i)],
+		'''
+		getcretimecurve param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y v0=%g |
+		put label1=Offset unit1=Km label2=t0 unit2=s label3=m0 unit3=Km
+		n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+		'''%(nmm,omm,dm0,nt0,ot0,dt0,v0,nt0,dt0,ot0,nmm,dm0,omm))
+
+	Flow(stackedSection+str(i),['cregathers'+str(i),'cretimecurves'+str(i)],
+		'''
+		crestack aperture=%d verb=y timeCurves=${SOURCES[1]} |
+		put label1=t0 unit1=s label2=m0 unit2=Km
+		''' %(aperture))
+
+	Plot(stackedSection+str(i),
+		'''
+		grey wanttitle=n
+		''')
+
+Flow(stackedSection,[stackedSection+'0',stackedSection+'1'],
+	'''
+	rcat axis=2 ${SOURCES[1]}
+	''')
+
+Result(stackedSection,'grey title="Stacked Section"')
+
+Flow('spik',stackedSection+'0',
+        '''
+	bandpass fhi=45 flo=10 |
+        pef minlag=.004 maxlag=.140 pnoise=.1 mincorr=0 maxcorr=1.
+        ''')
+
+Flow('dec',[stackedSection+'0','filt'],'decon filt=${SOURCES[1]} predictive=y')
+
+Result('spik','grey title="Stacked Section"')
+
+End()

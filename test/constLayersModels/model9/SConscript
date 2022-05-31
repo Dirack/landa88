@@ -1,58 +1,193 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# SConstruct (Python3)
+# 
+# Purpose: Full velocity inversion with NIP tomography.
+# Velocity model with plane interfaces.
+# 
+# Site: https://dirack.github.io
+# 
+# Version 1.0
+# 
+# Programmer: Rodolfo A C Neves (Dirack) 31/01/2022
+# 
+# Email: rodolfo_profissional@hotmail.com
+# 
+# License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
+
+import math
+
+# Madagascar Package
 from rsf.proj import *
 
+from rsf.recipes.kimodel import multiLayerModel as mlmod
+from rsf.recipes.nipTomography import *
+
 # Main Files
-trueModel='trueModel'
 stackedSection='stackedSection'
-parametersCube='parametersCube'
-dataCube='dataCube'
+parametersCube='parametersCube3'
 interpolatedDataCube='interpolatedDataCube2'
 
-# VFSA Parameters
-v0 = float(ARGUMENTS.get('v0',1.5))
-ot0 = float(ARGUMENTS.get('ot0',0.3))
-dt0 = float(ARGUMENTS.get('dt0',0.004))
-nt0 = int(ARGUMENTS.get('nt0',451))
-dm0 = float(ARGUMENTS.get('dm0',0.00625))
-om0 = float(ARGUMENTS.get('om0',1.5))
-nm0 = int(ARGUMENTS.get('nm0',962))
-aperture = int(ARGUMENTS.get('aperture',35))
-cds = bool(ARGUMENTS.get('cds',False))
+### velocity inversion using NIP tomography ###
 
-Flow('parametersCube4',parametersCube,
+ni = int(ARGUMENTS.get('ni',1)) # Number of iterations in inversion loop
+nit = int(ARGUMENTS.get('nit',100)) # Number of iterations in tomography
+nitf = int(ARGUMENTS.get('nitf',2)) # Number of interfaces
+
+# Traveltime picking
+traveltimePicking(stackedSection,'pick.txt',nitf)
+
+getT0sM0sCRSParameters('t0s','m0s','rns','rnips','betas', parametersCube,'pick.txt')
+
+# Generate shotsfile and anglefile for NIP sources
+Flow('shotsfile','m0s','math output="0" | rcat ${SOURCES[0]} axis=2 | transp')
+Flow('anglefile','betas','math output="180+(input*180/%g)"'% math.pi)
+
+# First iteration to get the velocity gradient in z
+model = 'model_0' # Constant velocity model
+velinv = model+'_gz_velinv' # gz velocity model
+
+# Constant velocity model for stereoniptomo
+Flow(model,None,
+     '''
+     math n1=301 d1=0.01 o1=0 n2=2001 d2=0.01 o2=-5 output=1.8 label1=Depth unit1=km label2=Position unit2=km
+     ''' )
+
+getVelocityZGradient(model,velinv,'shotsfile','anglefile','t0s','m0s','rnips','betas')
+
+# NIP model setup before z gradient inversion,
+Flow(['nipsourcesgz','nipanglesgz'],[velinv,'shotsfile','anglefile','t0s'],
         '''
-        put label2=t0 label3=m0 unit2=Km unit3=Km
-        n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g |
-	transp plane=12 | transp plane=23 |
-	smooth rect1=2 rect2=2
-        '''%(nt0,dt0,ot0,nm0,dm0,om0))
+        nipmodsetup shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} nipangles=${TARGETS[1]} | dd type=complex
+        ''')
 
-Flow('creTrajectories',[interpolatedDataCube,'parametersCube4'],
+# Plot inverted velocity model with NIP sources
+Plot('velocityModelgz',velinv,
 	'''
-	cretrajec param=${SOURCES[1]} verb=y 
+	grey color=j scalebar=y barreverse=y bias=1.508 title="Inverted velocity model" barlabel="Velocity" barunit="Km/s" min2=1 max2=10
 	''')
 
-Flow('cretimecurves',['creTrajectories','parametersCube4'],
+Plot('nipsourcesgz','sfgraph scalebar=y symbol=+ transp=y yreverse=y max1=3 min1=0 min2=1 max2=10 wanttitle=n wantaxis=n plotcol=7 symbolsz=10')
+
+Result('nipsources_model_gz',['velocityModelgz','nipsourcesgz'],'Overlay')
+
+### NIP tomography ####
+Flow('sz_2',None,
 	'''
-	getcretimecurve param=${SOURCES[1]} verb=y v0=%g
-	'''%(v0))
+	math n1=31 d1=0.5 o1=-5 n2=2 o2=1.0 d2=0.85 output="x2" |
+	put n2=1 n1=62
+	''')
+sv='sv_2'
+sz='sz_2'
 
-Flow(stackedSection,[interpolatedDataCube,'creTrajectories','cretimecurves'],
+# Layer's velocity
+Flow(sv,None,
 	'''
-	getcreandstack cremh=${SOURCES[1]} timeCurves=${SOURCES[2]} aperture=%d verb=y
-	''' % (aperture))
+	spike nsp=3 mag=%s k1=1,2,3 n1=3
+	'''%('1.8,1.72,2.0'))
 
-Flow('stackedSectionDecon',stackedSection,
+# Initial time misfit for inversion
+Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')
+
+models = []
+misfit = []
+sz='sz_2'
+t0s='t0s'
+m0s='m0s'
+betas='betas'
+rnips='rnips'
+shotsfile='shotsfile'
+anglefile='anglefile'
+for j in range(nitf):
+
+	model = velinv
+	misfit.append('misfit_1')
+	mis='misfit_1'
+
+	for i in range(2,ni+2,1):
+
+		velinv = 'model_%d_%d' % (i,j)
+		misinv = 'misfit_%d_%d' % (i,j)
+		models.append(velinv)
+		misfit.append(misinv)
+		vspline = 'vspline_%d_%d' % (i,j)
+		zspline = 'zspline_%d_%d' % (i,j)
+		nipangles = 'nipangles_%d_%d' % (i,j)
+		ray =  'ray_%d_%d' % (i,j)
+		nipsources = 'nipsources_%d_%d' % (i,j)
+		angles = 'angles_%d_%d' % (i,j)
+		t0sout = 't0sout_%d_%d' % (i,j)
+		m0sout = 'm0sout_%d_%d' % (i,j)
+		rnipsout = 'rnipsout_%d_%d' % (i,j)
+		betasout = 'betasout_%d_%d' % (i,j)
+		shotsout = 'shotsout_%d_%d' % (i,j)
+		anglesout = 'anglesout_%d_%d' % (i,j)
+
+		# NIP model setup, ray-tracing from acquisition surface to NIP sources
+		Flow([ray,nipangles],[model,shotsfile,anglefile,t0s],
+			'''
+			nipmodsetup shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} nipangles=${TARGETS[1]}
+			''')
+
+		# Rotate ray angles in NIP sources positions in 180 degrees
+		Flow(angles,nipangles,'math output="input+180"')
+		Flow(nipsources,ray,'dd type=float')
+
+		# forward modeling
+		# do a ray-tracing from NIP sources to acquisition surface and measure traveltime
+		Flow([velinv,zspline,vspline,misinv,t0sout,m0sout,rnipsout,betasout,shotsout,anglesout],
+		[model,nipsources,angles,t0s,m0s,
+		rnips,betas,sz,sv,mis,interpolatedDataCube],
+		    '''
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
+		    ''' % (nit,j))
+
+		model = velinv
+		sz = zspline
+		sv = vspline
+		mis = misinv
+		t0s = t0sout
+		m0s = m0sout
+		rnips = rnipsout
+		betas = betasout
+		shotsfile = shotsout
+		anglefile = anglesout 
+
+# NIP model setup after velocity model inversion,
+# ray-tracing from acquisition surface to NIP sources
+Flow(['ray2','nipangles2'],[velinv,shotsout,anglesout,t0sout],
+        '''
+        nipmodsetup shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} nipangles=${TARGETS[1]} | dd type=complex
+        ''')
+
+Flow('result','ray2','sfdd type=float')
+
+# Plot inverted velocity model with NIP sources
+Plot('velocityModel',velinv,
 	'''
-	bandpass fhi=50 flo=10 |
-	fxdecon lenf=4 verb=y n2w=962 fmin=5 fmax=125 |
-	agc
-       ''')
+	grey color=j scalebar=y barreverse=y bias=1.508 title="Inverted velocity model" barlabel="Velocity" barunit="Km/s" min2=1 max2=10
+	''')
 
-Plot('stackedSectionDecon','grey title="Stacked Section"')
+Plot('inverted-nipsources','ray2','sfgraph scalebar=y symbol=+ transp=y yreverse=y max1=3 min1=0 min2=1 max2=10 wanttitle=n wantaxis=n plotcol=7 symbolsz=10')
 
-Plot('zeroOffset_orig','grey title="Original Section"')
-Plot('zeroOffset_interp','agc | grey title="Interpolated Section"')
+Result('inverted-interfaces',['velocityModel','inverted-nipsources'],'Overlay')
 
-Result('result',['zeroOffset_interp','stackedSectionDecon'],'SideBySideIso')
+Flow('models',models,'rcat axis=3 ${SOURCES[0:%d]}'%(ni*nitf))
+
+Plot('models',
+	'''
+	put label3=Model unit3=index |
+	grey color=j scalebar=y barreverse=y bias=1.508 title="Velocity models" barlabel="Velocity" barunit="Km/s" min1=0 max1=3 min2=1 max2=5
+	''')
+
+# Plot misfit values for each iteration
+Flow('misfitvar',misfit,'rcat axis=1 ${SOURCES[0:%d]}'%(ni*nitf))
+
+Plot('misfitvar',
+	'''
+	put label1=Iteration unit1=index label2=Misfit n2=1 d1=1 |
+	graph title="Misfit variation"
+	''')
 
 End()

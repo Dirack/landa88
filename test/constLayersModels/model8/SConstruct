@@ -38,14 +38,20 @@ Depends('interpolatedDataCube2.rsf','interpolatedDataCube.rsf')
 Depends('crsParameters-m0-0-t0-0.rsf','interpolatedDataCube2.rsf')
 
 # Original velocity model
-xmax = 6.0
+xmax = 12.0
 zmax = 4.0
 
-layers = ((1.00,1.20,0.90,1.00),
-          (2.00,1.85,1.95,1.90))
+layers = ((0.4,0.45,0.46,0.47,0.48,0.5,0.8,0.85,0.85,0.85,0.6,1.0,1.0,0.4,0.4,0.7,0.8,0.7,0.6,0.5,0.4,0.4),
+	(0.95,0.95,0.95,0.95,1.35,1.4,1.3,1.0,1.2,1.4,1.3,1.4,1.5,1.3,1.2,1.1,1.2,1.2,1.3,1.3,1.3,1.3),
+	(1.7,1.7,1.7,1.7,1.7,1.8,1.8,1.9,1.9,1.8,1.6,1.8,2.0,1.9,1.7,1.8,1.8,1.7,2.0,2.0,2.0,1.8),
+	(2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5,2.5))
+#(2.0,2.0,1.9,2.0,2.1,2.2,2.2,2.1,2.2,2.2,2.2,2.2,2.2,2.2,2.2,2.2,2.2,2.2,2.2,2.2,2.2,2.2),
+#(2.3,2.3,2.3,2.3,2.3,2.3,2.3,2.3,2.3,2.3,2.3,2.3,2.4,2.4,2.4,2.4,2.4,2.4,2.4,2.4,2.4,2.4),
 
 velocities = (1.508,
               1.690,
+	      1.750,
+	      1.85,
               2.0)
 
 ### Modeling ###
@@ -131,9 +137,9 @@ pef('interpolatedDataCube',
 
 # VFSA Parameters
 v0 = float(ARGUMENTS.get('v0',1.5))
-ot0 = float(ARGUMENTS.get('ot0',1.0))
+ot0 = float(ARGUMENTS.get('ot0',0.3))
 dt0 = float(ARGUMENTS.get('dt0',0.008))
-nt0 = int(ARGUMENTS.get('nt0',251))
+nt0 = int(ARGUMENTS.get('nt0',376))
 om0 = float(ARGUMENTS.get('om0',1.5))
 dm0 = float(ARGUMENTS.get('dm0',0.025))
 nm0 = int(ARGUMENTS.get('nm0',121))
@@ -169,7 +175,7 @@ Flow('cretimecurves',['mhCoordinates',parametersCube],
 #Flow('parametersCube2',parametersCube,
 #	'''
 #	put label2=t0 label3=m0 unit2=Km unit3=Km
-##	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+#	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
 #	'''%(nt0,dt0,ot0,nm0,dm0,om0))
 
 #parametersCube='parametersCube2'
@@ -189,13 +195,15 @@ Result(stackedSection,
 
 ni = int(ARGUMENTS.get('ni',1)) # Number of iterations in inversion loop
 nit = int(ARGUMENTS.get('nit',100)) # Number of iterations in tomography
-nitf = int(ARGUMENTS.get('nitf',2)) # Number of interfaces
+nitf = int(ARGUMENTS.get('nitf',4)) # Number of interfaces
 model = 'model_0' # Constant velocity model
 
 # Traveltime picking
-Flow('pick1.txt',stackedSection,'ipick')
-Flow('pick2.txt',stackedSection,'ipick')
-Flow('pick.txt','pick1.txt pick2.txt','/usr/bin/cat $SOURCES')
+picks=[]
+for i in range(nitf):
+	picks.append('pick'+str(i)+'.txt')
+	Flow(picks[i],stackedSection,'ipick')
+Flow('pick.txt',picks,'/usr/bin/cat $SOURCES')
 
 files=['t0s','m0s']
 i=1
@@ -213,7 +221,7 @@ i=0
 for f in files:
 	Flow(f,[parametersCube,'t0s','m0s'],
 	'''
-	window n3=1 f3=%d |
+	window n1=1 f1=%d |
 	getparameter t0s=${SOURCES[1]} m0s=${SOURCES[2]}
 	''' %i)
 	i=i+1
@@ -235,7 +243,7 @@ Flow('shotsfile',['s2','m0s'],'rcat ${SOURCES[1]} axis=2 | transp')
 
 Flow('anglefile',[parametersCube,'t0s','m0s'],
 	'''
-	window n3=1 f3=2 |
+	window n1=1 f1=2 |
 	getparameter t0s=${SOURCES[1]} m0s=${SOURCES[2]} beta=y
 	''')
 
@@ -253,10 +261,10 @@ Flow([ray,nipangles],[model,'shotsfile','anglefile','t0s'],
 	''')
 
 # Rotate ray angles in NIP sources positions in 180 degrees
-Flow(angles,nipangles,'math output="input" | put d1=1 o1=1')
+Flow(angles,nipangles,'math output="input-180" | put d1=1 o1=1')
 Flow(nipsources,ray,'dd type=float')
 
-for i in range(1):
+for i in range(2):
 
 	velinv = 'modelgz_%d' % i
 	gz = 'gz_%d' % i
@@ -305,29 +313,24 @@ Result('invertedgz',['inverted-interfacesgz','mod1-imggz'],'SideBySideIso')
 #layers2 = ((1.2,1.2,1.2,1.2,1.2,1.0,1.0,1.0,0.9,0.9,0.9),
 #	(1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8,1.8))
 
-layers2 = ((1.2,1.2,1.2,1.2,0.9,0.9,0.9,0.9,0.9,0.9,0.9),
-	(1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85,1.85))
+layers2 = ((1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2),
+	(1.40,1.40,1.40,1.40,1.40,1.40,1.40,1.40,1.40,1.40,1.40),
+	(1.80,1.80,1.80,1.80,1.80,1.80,1.80,1.80,1.80,1.80,1.80))
 
 # Nodepoints of the cubic spline velocity function
-Flow('sz_0.asc',None,
+#Flow('sz_0.asc',None,
+#	'''
+#	echo %s
+#	n1=22 d1=1 o1=-2 n2=1 in=$TARGET data_format=ascii_float
+#	'''%(' '.join(map(arr2str,layers2))))
+
+#Flow('sz_2','sz_0.asc','dd form=native')
+
+Flow('sz_2',None,
 	'''
-	echo %s
-	n1=22 d1=1 o1=-2 n2=1 in=$TARGET data_format=ascii_float
-	'''%(' '.join(map(arr2str,layers2))))
-
-Flow('sz_2','sz_0.asc','dd form=native')
-
-#Flow('sz_2',None,
-#	'''
-#	math n1=11 d1=1 o1=-2 n2=2 o2=1.0 d2=0.85 output="x2" |
-#	put n2=1 n1=22
-#	''')
-
-#Flow('sz_2',None,
-#	'''
-#	math n1=21 d1=0.5 o1=-2 n2=2 o2=1.0 d2=0.95 output="x2" |
-#	put n2=1 n1=42
-#	''')
+	math n1=21 d1=0.5 o1=-2 n2=4 o2=1.0 d2=0.41 output="x2" |
+	put n2=1 n1=63
+	''')
 
 #Flow('sz_1',None,'math n1=11 d1=1 o1=-2 output="1.8"')
 #Flow('sz_2',['sz_0','sz_1'],
@@ -357,8 +360,8 @@ sv='sv_2'
 # Layer's velocity
 Flow(sv,None,
 	'''
-	spike nsp=3 mag=%s k1=1,2,3 n1=3
-	'''%('1.508,1.65,2.0'))
+	spike nsp=5 mag=%s k1=1,2,3,4,5 n1=5
+	'''%('1.508,1.5,1.7,1.8,2.0'))
 
 # Initial time misfit for inversion
 Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')
@@ -404,7 +407,7 @@ for j in range(nitf):
 			''')
 
 		# Rotate ray angles in NIP sources positions in 180 degrees
-		Flow(angles,nipangles,'math output="input"')
+		Flow(angles,nipangles,'math output="input-180"')
 		Flow(nipsources,ray,'dd type=float')
 
 		# forward modeling
@@ -413,7 +416,7 @@ for j in range(nitf):
 		[model,nipsources,angles,t0s,m0s,
 		rnips,betas,sz,sv,mis,interpolatedDataCube],
 		    '''
-		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.5 temp0=10 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
 		    ''' % (nit,j))
 
 		model = velinv

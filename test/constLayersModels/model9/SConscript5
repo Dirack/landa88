@@ -1,0 +1,27 @@
+from rsf.proj import *
+
+v0=1.8
+nt0=800
+dt0=0.004
+ot0=0.2
+nm0=1253
+dm0=0.00625
+om0=1.5
+itmax=500
+
+Flow('rnipmin3','rnipmin1',
+	'''
+	smooth rect1=5 rect2=5 repeat=2000
+	math output="input-12"
+	''')
+
+Flow('rnipmax3','rnipmin1',
+	'''
+	smooth rect1=5 rect2=5 repeat=2000
+	math output="input+10"
+	''')
+
+Flow('parametersCube4',['interpolatedDataCube2','rnmin1','rnmax1','rnipmin3','rnipmax3','betamin1','betamax1','parametersCube3'],
+        '''
+        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g c0=0.75 temp0=1.5 itmax=%d repeat=8 verb=y rnmin=-50 rnmax=50 rnipmin=0 rnipmax=50 betamin=-1 betamax=1 varlim=y rnminfile=${SOURCES[1]} rnmaxfile=${SOURCES[2]} rnipminfile=${SOURCES[3]} rnipmaxfile=${SOURCES[4]} betaminfile=${SOURCES[5]} betamaxfile=${SOURCES[6]} t0i=0.8 t0f=1.5 interval=y parameters=${SOURCES[7]}
+        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,itmax))

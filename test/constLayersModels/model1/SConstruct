@@ -20,7 +20,7 @@
 from rsf.proj import *
 
 # Madagascar Recipes
-from rsf.recipes.pefInterpolation import pefInterpolation as pef
+from rsf.recipes.pefInterpolation2 import pefInterpolation as pef
 from rsf.recipes.kimodel import multiLayerModel as mlmod
 from rsf.recipes.kimodel import kirchhoffNewtonModeling as kinewmod
 from rsf.recipes.kimodel import arr2str
@@ -126,6 +126,7 @@ pef('interpolatedDataCube',
 
 ### VFSA and CRE Stacking ####
 
+interpolatedDataCube='multiLayerDataCube'
 # It uses Very Fast Simulated Aneeling and non hyperbolic CRS
 # to get zero offset CRS parameters (RN, RNIP and BETA) from interpolated data cube
 
@@ -138,12 +139,14 @@ om0 = float(ARGUMENTS.get('om0',1.5))
 dm0 = float(ARGUMENTS.get('dm0',0.025))
 nm0 = int(ARGUMENTS.get('nm0',121))
 aperture = int(ARGUMENTS.get('aperture',30))
+repeat = int(ARGUMENTS.get('repeat',4))
+itmax = int(ARGUMENTS.get('itmax',500))
 cds = bool(ARGUMENTS.get('cds',False))
 
 Flow(parametersCube,interpolatedDataCube,
         '''
-        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=5 verb=y
-        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0))
+        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=%d itmax=%d verb=y rnmin=2.5 rnmax=10 rnipmin=1.8 rnipmax=5
+        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,repeat,itmax))
 
 Flow('creTrajectories',[interpolatedDataCube,parametersCube],
         '''
@@ -164,13 +167,13 @@ Flow('cretimecurves',['mhCoordinates',parametersCube],
         n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
         '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,nt0,dt0,ot0,nm0,dm0,om0))
 
-Flow('parametersCube2',parametersCube,
-	'''
-	put label2=t0 label3=m0 unit2=Km unit3=Km
-	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
-	'''%(nt0,dt0,ot0,nm0,dm0,om0))
+#Flow('parametersCube2',parametersCube,
+#	'''
+#	put label2=t0 label3=m0 unit2=Km unit3=Km
+#	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+#	'''%(nt0,dt0,ot0,nm0,dm0,om0))
 
-parametersCube='parametersCube2'
+#parametersCube='parametersCube2'
 
 Flow(stackedSection,['cregathers','cretimecurves'],
         '''
@@ -211,7 +214,7 @@ i=0
 for f in files:
 	Flow(f,[parametersCube,'t0s','m0s'],
 	'''
-	window n1=1 f1=%d |
+	window n3=1 f3=%d |
 	getparameter t0s=${SOURCES[1]} m0s=${SOURCES[2]}
 	''' %i)
 	i=i+1
@@ -233,7 +236,7 @@ Flow('shotsfile',['s2','m0s'],'rcat ${SOURCES[1]} axis=2 | transp')
 
 Flow('anglefile',[parametersCube,'t0s','m0s'],
 	'''
-	window n1=1 f1=2 |
+	window n3=1 f3=2 |
 	getparameter t0s=${SOURCES[1]} m0s=${SOURCES[2]} beta=y
 	''')
 
@@ -347,7 +350,7 @@ mlmod(interfaces='interfaces2',
 Plot('mod22',
 	'''
 	put o2=-2 |
-	grey color=j scalebar=y barreverse=y bias=1.508 title="Velocity model" barlabel="Velocity" barunit="Km/s" min2=1 max2=5
+	grey color=j scalebar=y barreverse=y bias=1.508 title="Velocity model" barlabel="Velocity" barunit="Km/s" min2=1.5 max2=4.5
 	''')
 
 sv='sv_2'
@@ -402,7 +405,7 @@ for j in range(nitf):
 			''')
 
 		# Rotate ray angles in NIP sources positions in 180 degrees
-		Flow(angles,nipangles,'math output="input-180"')
+		Flow(angles,nipangles,'math output="input+180"')
 		Flow(nipsources,ray,'dd type=float')
 
 		# forward modeling
@@ -437,10 +440,10 @@ Flow('result','ray2','sfdd type=float')
 # Plot inverted velocity model with NIP sources
 Plot('velocityModel',velinv,
 	'''
-	grey color=j scalebar=y barreverse=y bias=1.508 title="Inverted velocity model" barlabel="Velocity" barunit="Km/s" min2=1 max2=5
+	grey color=j scalebar=y barreverse=y bias=1.508 title="Inverted velocity model" barlabel="Velocity" barunit="Km/s" min2=1.5 max2=4.5
 	''')
 
-Plot('inverted-nipsources','ray2','sfgraph scalebar=y symbol=+ transp=y yreverse=y max1=3 min1=0 min2=1 max2=5 wanttitle=n wantaxis=n plotcol=7 symbolsz=10')
+Plot('inverted-nipsources','ray2','sfgraph scalebar=y symbol=+ transp=y yreverse=y max1=3 min1=0 min2=1.5 max2=4.5 wanttitle=n wantaxis=n plotcol=7 symbolsz=10')
 
 Plot('inverted-interfaces',['velocityModel','inverted-nipsources'],'Overlay')
 
@@ -448,7 +451,7 @@ Plot('inverted-interfaces',['velocityModel','inverted-nipsources'],'Overlay')
 Plot('mod1',trueModel,
 	'''
 	put label1=Depth unit1=Km label2=Position unit2=Km |
-	grey color=j scalebar=y barreverse=y bias=1.508 title="Original velocity model" barlabel="Velocity" barunit="Km/s" min1=0 max1=3 min2=1 max2=5
+	grey color=j scalebar=y barreverse=y bias=1.508 title="Original velocity model" barlabel="Velocity" barunit="Km/s" min1=0 max1=3 min2=1.5 max2=4.5
 	''')
 
 Plot('mod1-img',['mod1','inverted-nipsources'],'Overlay')
@@ -461,7 +464,7 @@ Flow('models',models,'rcat axis=3 ${SOURCES[0:%d]}'%(ni*nitf))
 Plot('models',
 	'''
 	put label3=Model unit3=index |
-	grey color=j scalebar=y barreverse=y bias=1.508 title="Velocity models" barlabel="Velocity" barunit="Km/s" min1=0 max1=3 min2=1 max2=5
+	grey color=j scalebar=y barreverse=y bias=1.508 title="Velocity models" barlabel="Velocity" barunit="Km/s" min1=0 max1=3 min2=1.5 max2=4.5
 	''')
 
 # Plot misfit values for each iteration

@@ -25,7 +25,6 @@ from rsf.recipes.kimodel import multiLayerModel as mlmod
 from rsf.recipes.kimodel import kirchhoffNewtonModeling as kinewmod
 from rsf.recipes.kimodel import arr2str
 
-
 # Main Files
 trueModel='trueModel'
 stackedSection='stackedSection'
@@ -95,20 +94,63 @@ pef('interpolatedDataCube',
 # to get zero offset CRS parameters (RN, RNIP and BETA) from interpolated data cube
 
 # VFSA Parameters
-v0 = float(ARGUMENTS.get('v0',1.5))
+v0 = float(ARGUMENTS.get('v0',1.8))
 ot0 = float(ARGUMENTS.get('ot0',0.2))
 dt0 = float(ARGUMENTS.get('dt0',0.004))
 nt0 = int(ARGUMENTS.get('nt0',451))
 om0 = float(ARGUMENTS.get('om0',1.5))
 dm0 = float(ARGUMENTS.get('dm0',0.00625))
-nm0 = int(ARGUMENTS.get('nm0',481))
+nm0 = int(ARGUMENTS.get('nm0',201))
 aperture = int(ARGUMENTS.get('aperture',30))
 cds = bool(ARGUMENTS.get('cds',False))
+itmax = int(ARGUMENTS.get('itmax',500))
 
-Flow(parametersCube,interpolatedDataCube,
+vmin=8.
+vmax=8.
+
+Flow('rnmin',None,'sfmath n1=%d o1=%f d1=%f n2=%d output="-50"' %(nt0,ot0,dt0,1))
+Flow('rnmax',None,'sfmath n1=%d o1=%f d1=%f n2=%d output="50"' %(nt0,ot0,dt0,1))
+Flow('rnipmin',None,
+	'''
+	sfmath n1=%d o1=%f d1=%f n2=%d output="%g+%g*%g*(x1/(2*%g))"
+	''' %(nt0,ot0,dt0,1,vmin,vmin,vmin,v0))
+Flow('rnipmax',None,
+	'''
+	sfmath n1=%d o1=%f d1=%f n2=%d output="9.+%g+%g*1.25*%g*(x1/(2*%g))"
+	''' %(nt0,ot0,dt0,1,vmax,vmax,vmax,v0))
+Flow('betamin',None,'sfmath n1=%d o1=%f d1=%f n2=%d output="-1"' %(nt0,ot0,dt0,1))
+Flow('betamax',None,'sfmath n1=%d o1=%f d1=%f n2=%d output="1"' %(nt0,ot0,dt0,1))
+
+#Flow('parametersCube2',[interpolatedDataCube,'rnmin','rnmax','rnipmin','rnipmax','betamin','betamax'],
+#        '''
+#        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g c0=0.75 temp0=1.5 itmax=%d repeat=8 verb=y rnmin=-50 rnmax=50 rnipmin=0 rnipmax=50 betamin=-1 betamax=1 varlim=y rnminfile=${SOURCES[1]} rnmaxfile=${SOURCES[2]} rnipminfile=${SOURCES[3]} rnipmaxfile=${SOURCES[4]} betaminfile=${SOURCES[5]} betamaxfile=${SOURCES[6]}
+#        '''%(1,om0,dm0,nt0,ot0,dt0,v0,itmax))
+
+Flow('rnmin1',None,'sfmath n1=%d o1=%f d1=%f n2=%d output="-50"' %(nt0,ot0,dt0,nm0))
+Flow('rnmax1',None,'sfmath n1=%d o1=%f d1=%f n2=%d output="50"' %(nt0,ot0,dt0,nm0))
+Flow('betamin1',None,'sfmath n1=%d o1=%f d1=%f n2=%d output="-1"' %(nt0,ot0,dt0,nm0))
+Flow('betamax1',None,'sfmath n1=%d o1=%f d1=%f n2=%d output="1"' %(nt0,ot0,dt0,nm0))
+#Flow('rnipfunc','parametersCube2',
+#	'''
+#	window n3=1 f3=1 |
+#	smooth repeat=2 rect1=2 rect2=5 |
+#	window n2=1 f2=1	
+#	''')
+Flow('rnipmin1','rnipfunc2',
+	'''
+	sfmath output="input" |
+	sfspray axis=2 n=%d
+	''' %nm0)
+Flow('rnipmax1','rnipfunc2',
+	'''
+	sfmath output="input+4" |
+	sfspray axis=2 n=%d
+	'''%nm0)
+
+Flow(parametersCube,[interpolatedDataCube,'rnmin1','rnmax1','rnipmin1','rnipmax1','betamin1','betamax1'],
         '''
-        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=8 verb=y
-        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0))
+        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g c0=0.5 temp0=10 itmax=%d repeat=8 verb=y rnmin=-50 rnmax=50 rnipmin=0 rnipmax=50 betamin=-1 betamax=1 varlim=n rnminfile=${SOURCES[1]} rnmaxfile=${SOURCES[2]} rnipminfile=${SOURCES[3]} rnipmaxfile=${SOURCES[4]} betaminfile=${SOURCES[5]} betamaxfile=${SOURCES[6]}
+        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,itmax))
 
 Flow('creTrajectories',[interpolatedDataCube,parametersCube],
         '''
@@ -127,22 +169,16 @@ Flow(stackedSection,[interpolatedDataCube,'creTrajectories','cretimecurves'],
         getcreandstack cremh=${SOURCES[1]} timeCurves=${SOURCES[2]} aperture=%d nm0=%g om0=%g dm0=%g nt0=%g ot0=%g dt0=%g
         ''' % (aperture,nm0,om0,dm0,nt0,ot0,dt0))
 
+maxcorr = nt0*dt0+ot0
+maxcorr /= 10
 # Stacked Section bandpass and deconvolution
 Flow('spik',stackedSection,
         '''
         bandpass fhi=45 flo=10 |
-        pef minlag=.004 maxlag=.140 pnoise=.1 mincorr=0 maxcorr=1.
-        ''')
+        pef minlag=.004 maxlag=.140 pnoise=.1 mincorr=0 maxcorr=%g
+        ''' %(maxcorr))
 
 Result('spik','grey title="Stacked Section"')
 
-
-Flow('parametersCube2',parametersCube,
-	'''
-	put label2=t0 label3=m0 unit2=Km unit3=Km
-	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
-	'''%(nt0,dt0,ot0,nm0,dm0,om0))
-
-parametersCube='parametersCube2'
 
 End()

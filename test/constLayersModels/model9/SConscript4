@@ -1,0 +1,44 @@
+from rsf.proj import *
+
+# Number of offsets to interpolate
+nhi=int(ARGUMENTS.get('nhi',10))
+
+# VFSA Parameters
+v0 = float(ARGUMENTS.get('v0',1.5))
+ot0 = float(ARGUMENTS.get('ot0',1.0))
+dt0 = float(ARGUMENTS.get('dt0',0.008))
+nt0 = int(ARGUMENTS.get('nt0',1001))
+om0 = float(ARGUMENTS.get('om0',1.5))
+dm0 = float(ARGUMENTS.get('dm0',0.025))
+nm0 = int(ARGUMENTS.get('nm0',121))
+aperture = int(ARGUMENTS.get('aperture',30))
+repeat = int(ARGUMENTS.get('repeat',4))
+itmax = int(ARGUMENTS.get('itmax',500))
+cds = bool(ARGUMENTS.get('cds',False))
+
+
+Flow('creTrajectories',['interpolatedDataCube2','parametersCube'],
+        '''
+        cretrajec param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y 
+        '''%(nm0,om0,dm0,nt0,ot0,dt0))
+
+Flow(['cregathers','mhCoordinates'],['interpolatedDataCube2','creTrajectories'],
+        '''
+        getcregather cremh=${SOURCES[1]} m=${TARGETS[1]} aperture=%d nm0=%g nt0=%g |
+        put label1=Time unit1=s label2=Offset unit2=Km label3=t0 unit3=s
+        label4=m0 unit4=Km n3=%d d3=%g o3=%g n4=%d d4=%g o4=%g
+        ''' % (aperture,nm0,nt0,nt0,dt0,ot0,nm0,dm0,om0))
+
+Plot('cretimecurve','cretimecurves',
+	'''
+	window n2=1 f2=100 n3=1 f3=0 | graph yreverse=y wanttitle=n min2=0 max2=4 min1=0
+	''')
+
+Plot('cregather','cregathers',
+	'''
+	window n3=1 f3=100 n4=1 f4=0 | grey
+	''')
+
+Result('creover',['cregather','cretimecurve'],'Overlay')
+
+End()

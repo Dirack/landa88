@@ -140,12 +140,14 @@ om0 = float(ARGUMENTS.get('om0',1.5))
 dm0 = float(ARGUMENTS.get('dm0',0.025))
 nm0 = int(ARGUMENTS.get('nm0',121))
 aperture = int(ARGUMENTS.get('aperture',30))
+itmax = int(ARGUMENTS.get('itmax',500))
+repeat = int(ARGUMENTS.get('repeat',4))
 cds = bool(ARGUMENTS.get('cds',False))
 
 Flow(parametersCube,interpolatedDataCube,
         '''
-        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=5 verb=y
-        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0))
+        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=%d itmax=%d verb=y rnmin=2.5 rnmax=10 rnipmin=1.8 rnipmax=5
+        '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,repeat,itmax))
 
 Flow('creTrajectories',[interpolatedDataCube,parametersCube],
         '''
@@ -166,13 +168,13 @@ Flow('cretimecurves',['mhCoordinates',parametersCube],
         n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
         '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,nt0,dt0,ot0,nm0,dm0,om0))
 
-Flow('parametersCube2',parametersCube,
-	'''
-	put label2=t0 label3=m0 unit2=Km unit3=Km
-	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
-	'''%(nt0,dt0,ot0,nm0,dm0,om0))
+#Flow('parametersCube2',parametersCube,
+#	'''
+#	put label2=t0 label3=m0 unit2=Km unit3=Km
+#	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
+#	'''%(nt0,dt0,ot0,nm0,dm0,om0))
 
-parametersCube='parametersCube2'
+#parametersCube='parametersCube2'
 
 Flow(stackedSection,['cregathers','cretimecurves'],
         '''
@@ -215,7 +217,7 @@ i=0
 for f in files:
 	Flow(f,[parametersCube,'t0s','m0s'],
 	'''
-	window n1=1 f1=%d |
+	window n3=1 f3=%d |
 	getparameter t0s=${SOURCES[1]} m0s=${SOURCES[2]}
 	''' %i)
 	i=i+1
@@ -237,7 +239,7 @@ Flow('shotsfile',['s2','m0s'],'rcat ${SOURCES[1]} axis=2 | transp')
 
 Flow('anglefile',[parametersCube,'t0s','m0s'],
 	'''
-	window n1=1 f1=2 |
+	window n3=1 f3=2 |
 	getparameter t0s=${SOURCES[1]} m0s=${SOURCES[2]} beta=y
 	''')
 
@@ -255,10 +257,10 @@ Flow([ray,nipangles],[model,'shotsfile','anglefile','t0s'],
 	''')
 
 # Rotate ray angles in NIP sources positions in 180 degrees
-Flow(angles,nipangles,'math output="input-180" | put d1=1 o1=1')
+Flow(angles,nipangles,'math output="input" | put d1=1 o1=1')
 Flow(nipsources,ray,'dd type=float')
 
-for i in range(2):
+for i in range(1):
 
 	velinv = 'modelgz_%d' % i
 	gz = 'gz_%d' % i
@@ -355,7 +357,7 @@ sv='sv_2'
 Flow(sv,None,
 	'''
 	spike nsp=4 mag=%s k1=1,2,3,4 n1=4
-	'''%('1.508,1.6,1.74,2.0'))
+	'''%('1.508,1.60,1.71,2.0'))
 
 # Initial time misfit for inversion
 Flow('misfit_1',None,'spike nsp=1 mag=0 k1=1 n1=1')
@@ -401,7 +403,7 @@ for j in range(nitf):
 			''')
 
 		# Rotate ray angles in NIP sources positions in 180 degrees
-		Flow(angles,nipangles,'math output="input-180"')
+		Flow(angles,nipangles,'math output="input"')
 		Flow(nipsources,ray,'dd type=float')
 
 		# forward modeling
@@ -410,7 +412,7 @@ for j in range(nitf):
 		[model,nipsources,angles,t0s,m0s,
 		rnips,betas,sz,sv,mis,interpolatedDataCube],
 		    '''
-		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.1 temp0=5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
+		    landa88tomo shotsfile=${SOURCES[1]} anglefile=${SOURCES[2]} t0s=${SOURCES[3]} m0s=${SOURCES[4]} rnips=${SOURCES[5]} betas=${SOURCES[6]} sz=${SOURCES[7]} vz=${SOURCES[8]} zspline=${TARGETS[1]} vspline=${TARGETS[2]} misfit=${SOURCES[9]} misinv=${TARGETS[3]} data=${SOURCES[10]} v0=1.508 nit=%d c0=0.75 temp0=1.5 itf=%d t0sout=${TARGETS[4]} m0sout=${TARGETS[5]} rnipsout=${TARGETS[6]} betasout=${TARGETS[7]} shotsout=${TARGETS[8]} anglesout=${TARGETS[9]}
 		    ''' % (nit,j))
 
 		model = velinv
