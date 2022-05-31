@@ -15,6 +15,7 @@
 
 */
 #include <rsf.h>
+#include <math.h>
 #include "interface2d.h"
 
 #ifndef _interface2d_h_
@@ -231,6 +232,31 @@ Note: Coefficients vector has 4 coefficients for each (nx-1) spline
 	c[1] = itf->coef[is*4+1];
 	c[2] = itf->coef[is*4+2];
 	c[3] = itf->coef[is*4+3];
+}
+
+void itf2d_getNipAngles(itf2d itf, float *x, float* teta, int n)
+/*<TODO>*/
+{
+	float x1[2];
+	float x2[2];
+	float v[2];
+	float t;
+	int i;
+
+	for(i=0;i<n;i++){
+		x1[1] = x[i];
+		x1[0] = getZCoordinateOfInterface(itf,x[i]);
+
+		x2[1] = x[i]+0.01;
+		x2[0] = getZCoordinateOfInterface(itf,x2[1]);
+
+		v[0] = x1[1]-x2[1];
+		v[1] = x2[0]-x1[0];
+		t = sqrt(v[0]*v[0]+v[1]*v[1]); /* Length */
+		t = acos(-v[0]/t);
+		if(v[1]>0) t = -t;
+		teta[i] = t;
+	}
 }
 
 void itf2d_free(itf2d* itf)

@@ -201,6 +201,29 @@ void test_freeInterfaceStorage()
 	TEST_ASSERT_NULL(itf2);
 }
 
+void test_getNipAngles()
+/*<TODO>*/
+{
+	itf2d itf2;
+	float a0[5]={1.,1.,1.,1.,1.};
+	float a1[5]={0.,0.5,1.,1.5,2.};
+	float a2[5]={2.,1.5,1.,0.5,0.};
+	float x[1]={0.};
+	float teta[1]={90.};
+	itf2=itf2d_init(a0,5,0.,0.5);
+
+	itf2d_getNipAngles(itf2,x,teta,1);
+	TEST_ASSERT_FLOAT_WITHIN(0.1,0.,teta[0]);
+
+	itf2d_setZNodepoints(itf2,a1);
+	itf2d_getNipAngles(itf2,x,teta,1);
+	TEST_ASSERT_FLOAT_WITHIN(0.1,-0.7853,teta[0]);
+
+	itf2d_setZNodepoints(itf2,a2);
+	itf2d_getNipAngles(itf2,x,teta,1);
+	TEST_ASSERT_FLOAT_WITHIN(0.1,0.7853,teta[0]);
+}
+
 int main(void){
 
 	initialize_test_interface();
@@ -215,5 +238,6 @@ int main(void){
 	RUN_TEST(test_cubicSplineCoefficientsCalculationPassedAsVector);
 	RUN_TEST(test_calcInterfacesZcoord);
 	RUN_TEST(test_freeInterfaceStorage);
+	RUN_TEST(test_getNipAngles);
 	return UNITY_END();
 }

@@ -17,7 +17,7 @@ TESTS=test_interface2d.x test_raytrace.x test_tomography.x test_model2d.x test_l
 all:	$(TESTS)
 
 test_interface2d.x:	test_interface2d.c ../../interface2d.c Unity/unity.c
-	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf
+	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
 	./$@ && rm $@
 
 test_raytrace.x:	test_raytrace.c ../../raytrace.c ../../grid2.c ../../atela.c ../../dynamic.c ../../interface2d.c Unity/unity.c
