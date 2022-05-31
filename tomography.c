@@ -331,11 +331,26 @@ sum of t=ts+tr.
 			//RNIP[is] = calculateRNIPWithHubralLaws(rt,traj,it,vv,nv,t0[is],itf,sz,nsz,osz,dsz);
 			RNIP[is] = calculateRNIPWithDynamicRayTracing(rt,dt,it,traj,v0);
 
-			if(RNIP[is]<0.0)
+			if(RNIP[is]<0.0){
 				sf_warning("ERROR: RNIP=%f",RNIP[is]);
+				sf_warning("%f",a[is]);
+				sf_warning("NIP=%d teta=%f",is,a[is]);
+	                        sf_warning("From: x=%f z=%f",s[is][1],s[is][0]);
+                        	sf_warning("To: x=%f z=%f",traj[it][1],traj[it][0]);
+			}
 
 			/* Calculate BETA */
 			BETA[is] = calculateBetaWithRayTrajectory(x,traj,it);
+			a[is] = BETA[is]*180./SF_PI;
+
+			if(a[is] < -90.){
+				sf_warning("ERROR: BETA=%f",BETA[is]);
+				sf_warning("%f",a[is]);
+				sf_warning("NIP=%d teta=%f",is,a[is]);
+	                        sf_warning("From: x=%f z=%f",s[is][1],s[is][0]);
+                        	sf_warning("To: x=%f z=%f",traj[it][1],traj[it][0]);
+
+			}
 
 			/* STACKING */
 			//sumAmplitudes = 0.;
@@ -403,6 +418,7 @@ void modelSetup(float **s,int ns, float *m0, float *t0, float* a, int itf, int *
 		x[1] = m0[ir];
 
 		/* initialize direction */
+		sf_warning("%f",a[ir]);
 		a[ir]=(a[ir]+180)*DEG2RAD;
 		p[0] = -cosf(a[ir]);
 		p[1] = sinf(a[ir]);
@@ -417,12 +433,14 @@ void modelSetup(float **s,int ns, float *m0, float *t0, float* a, int itf, int *
 
 		/* write escape angles */
 		if(it!=0){
+			a[ir]=a[ir]*180/SF_PI;
                         sf_warning("BAD RAY ANGLE IN NIP MODEL SETUP");
-                        sf_warning("From: x=0. z=%f",m0[ir]);
-                        sf_warning("To: x=%f z=%f",s[ir][0],s[ir][1]);
-                        sf_warning("Starting angle: %f",a[ir]*180./SF_PI-180);
-                        sf_warning("Escape angle: %f",a[ir]*180./SF_PI);
-			sf_error("%s: %s",__FILE__,__LINE__);
+			sf_warning("NIP=%d teta=%f it=%d",ir,a[ir]-180,it);
+                        sf_warning("From: x=%f z=0.",m0[ir]);
+                        sf_warning("To: x=%f z=%f",s[ir][1],s[ir][0]);
+                        sf_warning("Starting angle: %f",a[ir]);
+                        sf_warning("Escape angle: %f",a[ir]);
+			sf_error("%s: %d",__FILE__,__LINE__);
 		}else{
                         /* Escape vector */
                         it=nt-1;
@@ -434,11 +452,12 @@ void modelSetup(float **s,int ns, float *m0, float *t0, float* a, int itf, int *
                         /* Dot product with unit vector pointing upward */
                         t = sqrt(x[0]*x[0]+x[1]*x[1]); /* Length */
                         t = acos(x[0]/t);
+			sf_warning("a=%f",t);
                         if(x[1]>0) t = -t;
 
                         a[ir] = t*180./SF_PI;
 
-			//sf_warning("a=%f\n",a[ir]);
+			sf_warning("a=%f",t);
 		}
 
 		/* Raytrace close */

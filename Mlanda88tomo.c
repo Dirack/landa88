@@ -185,7 +185,9 @@ int main(int argc, char* argv[])
 	sf_floatread(sv,nsv,vz_file);
 	vf = sv[nsv-1];
 
+	#ifndef DISTURB_INTERFACES
 	interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
+	#endif
 	mod = mod2d_init(nsv,sv,minvel,maxvel,nsz,osz,dsz,sz);
 
 	/* VFSA parameters vectors */
@@ -233,11 +235,13 @@ int main(int argc, char* argv[])
 		otrnip[im]=RNIP[im];
 		otbeta[im]=BETA[im];
 		ota[im]=a[im];
+		sf_warning("%f",ota[im]);
 		t0p[im]=t0[im];
 		m0p[im]=m0[im];
 		RNIPp[im]=RNIP[im];
 		BETAp[im]=BETA[im];
 	}
+	//sf_error("oi");
 
 	/* get slowness squared (Background model) */
 	nm = n[0]*n[1];
@@ -370,14 +374,18 @@ int main(int argc, char* argv[])
 		/* Function to update velocity model */
 		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
 
+		sf_warning("=>%f",a[12]);
 		/* Setup NIP sources */
 		modelSetup(s, nx,  m0, t0, a,  itf,  n,  d,  o,  slow);
-
+		
+		sf_warning("=>%f",a[12]);
+		#ifndef DISTURB_INTERFACES
 		/**/
 		interfaceInterpolationFromNipSources(s,nshot,cnewz,nsz,osz,dsz,nsv);
 
 		/* Function to update velocity model */
 		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
+		#endif
 
 		tmis=0;
 	
@@ -396,6 +404,9 @@ int main(int argc, char* argv[])
 			/* optimized parameters */
 			for(im=0;im<nsz;im++)
 				otsz[im]=cnewz[im];
+			#ifdef DISTURB_INTERFACES
+			mod2d_setinterfacesnodes(mod,itf,cnewz);
+			#endif
 			for(im=0;im<itf+1;im++)
 				otsv[im]=cnewv[im];
 			#define UPDATE_CRS_PARAMETERS
@@ -410,7 +421,7 @@ int main(int argc, char* argv[])
 			}
 			#endif
 			tmis0 = fabs(tmis);
-		}else{
+		}/*else{
 			for(im=0;im<ns;im++){
 				m0[im]=otm0[im];
 				t0[im]=ott0[im];
@@ -418,7 +429,7 @@ int main(int argc, char* argv[])
 				BETA[im]=otbeta[im];
 				a[im]=ota[im];
 			}
-		}
+		}*/
 
 		/* VFSA parameters update condition */
 		deltaE = fabs(tmis) - Em0;
@@ -429,6 +440,9 @@ int main(int argc, char* argv[])
 		if (deltaE<=0){
 			for(im=0;im<nsz;im++)
 				sz[im]=cnewz[im];
+			#ifdef DISTURB_INTERFACES
+			mod2d_setinterfacesnodes(mod,itf,cnewz);
+			#endif
 			for(im=0;im<itf+1;im++)
 				mod2d_setlayervel(mod,im,cnewv[im]);
 			Em0 = fabs(tmis);
@@ -437,10 +451,13 @@ int main(int argc, char* argv[])
 			if (PM > u){
 				for(im=0;im<nsz;im++)
 					sz[im]=cnewz[im];
+				#ifdef DISTURB_INTERFACES
+				mod2d_setinterfacesnodes(mod,itf,cnewz);
+				#endif
 				for(im=0;im<itf+1;im++)
 					mod2d_setlayervel(mod,im,cnewv[im]);
 				Em0 = fabs(tmis);
-			}/*else{
+			}else{
 				for(im=0;im<ns;im++){
 					m0[im]=otm0[im];
 					t0[im]=ott0[im];
@@ -448,7 +465,7 @@ int main(int argc, char* argv[])
 					BETA[im]=otbeta[im];
 					a[im]=ota[im];
 				}
-			}*/
+			}
 		}	
 			
 		sf_warning("%d/%d interface=%d => Semblance(%f) v=%f v=%f %f;",q+1,nit,itf,otmis,otsv[itf],cnewv[itf],tmis);

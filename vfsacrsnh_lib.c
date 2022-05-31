@@ -72,8 +72,8 @@ VFSA disturb parameters step.
 	int i;
 	// TODO pass max and min values through cmd
 	#ifdef DISTURB_INTERFACES
-	float minz[2]={0.8,1.75};
-	float maxz[2]={1.3,1.9};
+	float minz[2]={1.0,1.8};
+	float maxz[2]={1.1,1.85};
 	float *originalZ;
 	#endif
 	float minvel=mod2d_getlayervmin(mod,itf);
@@ -108,7 +108,8 @@ VFSA disturb parameters step.
 	int nx = mod2d_getnuminterfacesnodes(mod);
 	originalZ = sf_floatalloc(nx);
 	mod2d_getallinterfacesnodes(mod,originalZ);
-	for(i=0;i<nx;i++){
+	mod2d_getallinterfacesnodes(mod,disturbedZ);
+	for(i=(itf*nx);i<(itf*nx+nx);i++){
 
 		u=getRandomNumberBetween0and1();
 				
@@ -116,15 +117,15 @@ VFSA disturb parameters step.
 
 		disturbedZ[i] = originalZ[i] + (disturbance*scale);
 
-		if (disturbedZ[i] >= maxz[i/nx]) {
+		if (disturbedZ[i] >= maxz[itf]) {
 
-			disturbedZ[i] = maxz[i/nx] - (maxz[i/nx]-minz[i/nx]) * getRandomNumberBetween0and1();
+			disturbedZ[i] = maxz[itf] - (maxz[itf]-minz[itf]) * getRandomNumberBetween0and1();
 			
 		}
 
-		if (disturbedZ[i] <= minz[i/nx]) {
+		if (disturbedZ[i] <= minz[itf]) {
 
-			disturbedZ[i] = (maxz[i/nx]-minz[i/nx]) * getRandomNumberBetween0and1() + minz[i/nx];
+			disturbedZ[i] = (maxz[itf]-minz[itf]) * getRandomNumberBetween0and1() + minz[itf];
 			
 		}
 	}
