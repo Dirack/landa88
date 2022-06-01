@@ -35,6 +35,11 @@ test_model2d.x:	test_model2d.c ../../interface2d.c ../../layer2d.c ../../model2d
 test_layer2d.x:	test_layer2d.c ../../interface2d.c ../../layer2d.c Unity/unity.c
 	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf
 	./$@ && rm $@
+
+test_setup.x:	test_setup.c ../../tomography.c ../../raytrace.c ../../grid2.c ../../atela.c ../../dynamic.c ../../interface2d.c Unity/unity.c
+	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
+	./$@ && rm $@
+
 clean:
 	rm *.x
 

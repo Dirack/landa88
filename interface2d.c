@@ -259,6 +259,30 @@ void itf2d_getNipAngles(itf2d itf, float *x, float* teta, int n)
 	}
 }
 
+float itf2d_getNipAngleForX(itf2d itf, float x)
+/*<TODO>*/
+{
+	float x1[2];
+	float x2[2];
+	float v[2];
+	float t;
+	int i;
+
+	x1[1] = x;
+	x1[0] = getZCoordinateOfInterface(itf,x);
+
+	x2[1] = x+0.01;
+	x2[0] = getZCoordinateOfInterface(itf,x2[1]);
+
+	v[0] = x1[1]-x2[1];
+	v[1] = x2[0]-x1[0];
+	t = sqrt(v[0]*v[0]+v[1]*v[1]); /* Length */
+	t = acos(-v[0]/t);
+	if(v[1]>0) t = -t;
+	return t;
+}
+
+
 void itf2d_free(itf2d* itf)
 /*< Free internal storage >*/
 {

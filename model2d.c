@@ -128,3 +128,33 @@ void mod2d_getallinterfacesnodes(mod2d m, float *z)
 int mod2d_getnuminterfacesnodes(mod2d m)
 /*< Get number of interfaces nodepoints >*/
 {return itf2d_n(m->itf[0]);}
+
+void mod2d_getNipAnglesForAModelInterface(mod2d m, int n, float *teta)
+/*< Get NIP angles TODO >*/
+{
+	float *x;
+	int nx;
+	float dx, ox;
+	int i;
+	nx = mod2d_getnuminterfacesnodes(m);
+	x = sf_floatalloc(nx);
+	dx = itf2d_d(m->itf[n]);
+	ox = itf2d_o(m->itf[n]);
+	for(i=0;i<nx;i++)
+		x[i]=i*dx+ox;
+	itf2d_getNipAngles(m->itf[n],x,teta,nx);
+
+	free(x);
+}
+
+float mod2d_getNipAngleForX(mod2d m, int n, float x)
+/*< TODO >*/
+{
+return itf2d_getNipAngleForX(m->itf[n],x);
+}
+
+float mod2d_getZCoordinateOfInterface(mod2d m, int n, float x)
+/*<TODO>*/
+{
+return getZCoordinateOfInterface(m->itf[n],x);
+}

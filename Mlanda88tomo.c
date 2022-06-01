@@ -8,6 +8,10 @@ The time misfit is calculated by the difference between the reflection traveltim
 
 */
 
+#define DEBUG_UTILS
+#ifdef DEBUG_UTILS
+#include "utils.h"
+#endif
 #include <math.h>
 #include <rsf.h>
 #include "tomography.h"
@@ -74,13 +78,15 @@ int main(int argc, char* argv[])
 	float *otangles; // Optimized Normal ray angles (degrees)
 	mod2d mod;
         float minvel[5]={1.45,1.60,1.72,1.8,1.9};
-        float maxvel[5]={1.55,1.75,1.80,1.9,2.2};
+        float maxvel[5]={1.55,1.73,1.80,1.9,2.2};
 	float vf;
 	float *t0p;
 	float *m0p;
 	float *RNIPp;
 	float *BETAp;
 	float *ota;
+	float *teta;
+	int nnod;
 	sf_file shots; // NIP sources (z,x)
 	sf_file vel; // background velocity model
 	sf_file velinv; // Inverted velocity model
@@ -185,9 +191,9 @@ int main(int argc, char* argv[])
 	sf_floatread(sv,nsv,vz_file);
 	vf = sv[nsv-1];
 
-	#ifndef DISTURB_INTERFACES
+	//#ifndef DISTURB_INTERFACES
 	interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
-	#endif
+	//#endif
 	mod = mod2d_init(nsv,sv,minvel,maxvel,nsz,osz,dsz,sz);
 
 	/* VFSA parameters vectors */
@@ -235,7 +241,7 @@ int main(int argc, char* argv[])
 		otrnip[im]=RNIP[im];
 		otbeta[im]=BETA[im];
 		ota[im]=a[im];
-		sf_warning("%f",ota[im]);
+		//sf_warning("%f",ota[im]);
 		t0p[im]=t0[im];
 		m0p[im]=m0[im];
 		RNIPp[im]=RNIP[im];
@@ -347,10 +353,19 @@ int main(int argc, char* argv[])
 
 	/* Number of NIP sources for each interface */
 	nx = ns/(nsv-1);
+	nnod = nsz/(nsv-1);
+	teta = sf_floatalloc(nx);
 
 	//disturbParameters(temp0,otsv,otsz,mod,0.1,itf);
 	/* Setup NIP sources */
-	//modelSetup(s, nx,  m0, t0, a,  itf,  n,  d,  o,  slow);
+	interfaceSetup(s, nx,  m0, t0, BETA,  itf,  n,  d,  o,  slow);
+	interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
+	for(im=0;im<nnod;im++)
+		teta[im]=sz[im+itf*nnod];
+	mod2d_setinterfacesnodes(mod,itf,teta);
+	//mod2d_getNipAnglesForAModelInterface(mod,itf,teta);
+	dumpfloat1("sz",sz,nsz);
+	tmis=forwardModeling(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv,nsv,mod);
 	//tmis0=calculateTimeMisfit(s,otsv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,otsz,nsz,osz,dsz,otsv,nsv);
 
 	//for(im=0;im<ns;im++){
@@ -358,9 +373,9 @@ int main(int argc, char* argv[])
 	//	tmis0 += fabs(m0[im]-m0p[im]);
 		//sf_warning("tmis0=%f t0=%f t0p=%f",tmis0,t0[im],t0p[im]);
 	//}
-	//tmis0=10;
+	tmis0=tmis;
 	//sf_error("oi");
-	//otmis=tmis0;
+	otmis=tmis0;
 
 	/* Very Fast Simulated Annealing (VFSA) algorithm */
 	for (q=0; q<nit; q++){
@@ -374,23 +389,37 @@ int main(int argc, char* argv[])
 		/* Function to update velocity model */
 		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
 
-		sf_warning("=>%f",a[12]);
+		//sf_warning("=>%f",a[12]);
 		/* Setup NIP sources */
-		modelSetup(s, nx,  m0, t0, a,  itf,  n,  d,  o,  slow);
-		
-		sf_warning("=>%f",a[12]);
+		//modelSetup(s, nx,  m0, t0, a,  itf,  n,  d,  o,  slow);
+		//mod2d_getNipAnglesForAModelInterface(mod,itf,teta);
+		//for(im=0;im<nx;im++)
+		//	sf_warning("%f",teta[im]);
+		tmis=0;
+		interfaceSetup(s, nx,  m0, t0, BETA,  itf,  n,  d,  o,  slow);
+		dumpfloat1("Antes: sz",sz,nsz);
+		interfaceInterpolationFromNipSources(s,nshot,sz,nsz,osz,dsz,nsv);
+		dumpfloat1("Depois: sz",sz,nsz);
+		for(im=0;im<nnod;im++)
+			teta[im]=sz[im+itf*nnod];
+		//mod2d_setinterfacesnodes(mod,itf,teta);
+		//mod2d_getNipAnglesForAModelInterface(mod,itf,teta);
+		//dumpfloat1("sz",sz,nsz);
+		tmis=forwardModeling(s,v0,t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv,nsv,mod);
+	
+		//sf_warning("=>%f",a[12]);
 		#ifndef DISTURB_INTERFACES
 		/**/
-		interfaceInterpolationFromNipSources(s,nshot,cnewz,nsz,osz,dsz,nsv);
+		//interfaceInterpolationFromNipSources(s,nshot,cnewz,nsz,osz,dsz,nsv);
 
 		/* Function to update velocity model */
-		buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
+		//buildSlownessModelFromVelocityModel(n,o,d,cnewv,nsv,cnewz,nsz,osz,dsz,slow,nm);
 		#endif
 
-		tmis=0;
 	
 		/* Calculate time misfit through forward modeling */		
-		tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv,nsv);
+		//tmis=calculateTimeMisfit(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv,nsv);
+		//tmis=forwardModeling(s,cnewv[0],t0,m0,RNIP,BETA,n,o,d,slow,a,nx,itf,data,data_n,data_o,data_d,cnewz,nsz,osz,dsz,cnewv,nsv,mod);
 
 		//for(im=0;im<ns;im++){
 		//	tmis += fabs(t0[im]-t0p[im])*fabs(t0[im]-t0p[im]);
@@ -405,7 +434,7 @@ int main(int argc, char* argv[])
 			for(im=0;im<nsz;im++)
 				otsz[im]=cnewz[im];
 			#ifdef DISTURB_INTERFACES
-			mod2d_setinterfacesnodes(mod,itf,cnewz);
+			//mod2d_setinterfacesnodes(mod,itf,cnewz);
 			#endif
 			for(im=0;im<itf+1;im++)
 				otsv[im]=cnewv[im];
@@ -441,7 +470,7 @@ int main(int argc, char* argv[])
 			for(im=0;im<nsz;im++)
 				sz[im]=cnewz[im];
 			#ifdef DISTURB_INTERFACES
-			mod2d_setinterfacesnodes(mod,itf,cnewz);
+			//mod2d_setinterfacesnodes(mod,itf,cnewz);
 			#endif
 			for(im=0;im<itf+1;im++)
 				mod2d_setlayervel(mod,im,cnewv[im]);
@@ -452,12 +481,12 @@ int main(int argc, char* argv[])
 				for(im=0;im<nsz;im++)
 					sz[im]=cnewz[im];
 				#ifdef DISTURB_INTERFACES
-				mod2d_setinterfacesnodes(mod,itf,cnewz);
+				//mod2d_setinterfacesnodes(mod,itf,cnewz);
 				#endif
 				for(im=0;im<itf+1;im++)
 					mod2d_setlayervel(mod,im,cnewv[im]);
 				Em0 = fabs(tmis);
-			}else{
+			}/*else{
 				for(im=0;im<ns;im++){
 					m0[im]=otm0[im];
 					t0[im]=ott0[im];
@@ -465,7 +494,7 @@ int main(int argc, char* argv[])
 					BETA[im]=otbeta[im];
 					a[im]=ota[im];
 				}
-			}
+			}*/
 		}	
 			
 		sf_warning("%d/%d interface=%d => Semblance(%f) v=%f v=%f %f;",q+1,nit,itf,otmis,otsv[itf],cnewv[itf],tmis);

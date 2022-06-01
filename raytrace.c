@@ -535,29 +535,6 @@ Note: If the velocity model is correct the NIP sources location coincides with i
 	tsz = sf_floatalloc(nxs);
 	coef = sf_floatalloc(4*(nxs-1));
 
-	/*for(i=0;i<(nsv-1);i++){
-		l=0;
-		for(im=0;im<nxs;im++){
-			tsz[im]=s[i*nxs+im][0];
-			tsx[im]=s[i*nxs+im][1];
-		}
-		sortingXinAscendingOrder(tsx,tsz,nxs);
-		calculateSplineCoeficients(nxs,tsx,tsz,coef);
-		oxs=tsx[0];
-		for(im=0;im<nxsz;im++){
-			xx=im*dsz+osz;
-			if(xx<tsx[0] || xx>tsx[nxs-1]){
-				sz[i*nxsz+im]=tsz[l];
-			}else{
-				while(xx>tsx[l+1]){
-					l++;
-					oxs=tsx[l];
-				}
-				xs=xx-oxs;
-				sz[i*nxsz+im]=coef[l*4+0]*xs*xs*xs+coef[l*4+1]*xs*xs+coef[l*4+2]*xs+coef[l*4+3];
-			}
-		}
-	}*/
 	for(i=0;i<(nsv-1);i++){
 		for(im=0;im<nxs;im++){
 			tsz[im]=s[i*nxs+im][0];
@@ -568,11 +545,7 @@ Note: If the velocity model is correct the NIP sources location coincides with i
 		oxs=tsx[0];
 		for(im=0;im<nxsz;im++){
 			xx=im*dsz+osz;
-			if(xx<tsx[0]){
-				//sz[i*nxsz+im]=tsz[0];
-			}else if(xx>tsx[nxs-1]){
-				//sz[i*nxsz+im]=tsz[nxs-1];
-			}else{
+			if(xx>tsx[0] && xx<tsx[nxs-1]){
 				l = binarySearch(xx,tsx,nxs); 
 				oxs=tsx[l];
 				xs=xx-oxs;

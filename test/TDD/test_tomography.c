@@ -79,6 +79,11 @@ void test_calculateBetaWithRayTrajectory()
 	TEST_ASSERT_FLOAT_WITHIN(0.01,SF_PI/4.,calculateBetaWithRayTrajectory(x,traj,2));
 }
 
+void test_modelSetup()
+/*TODO*/
+{
+
+}
 
 int main(void){
 

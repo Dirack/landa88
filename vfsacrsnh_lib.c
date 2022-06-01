@@ -50,7 +50,7 @@ float getRandomNumberBetween0and1(){
 float getVfsaIterationTemperature(int iteration,float dampingFactor,float inicialTemperature){
 /*< Temperature function for VFSA algorithm >*/
 
-	return inicialTemperature*expf(-dampingFactor*pow(iteration,0.33));
+	return inicialTemperature*expf(-dampingFactor*pow(iteration,0.25));
 
 }
 
@@ -72,8 +72,8 @@ VFSA disturb parameters step.
 	int i;
 	// TODO pass max and min values through cmd
 	#ifdef DISTURB_INTERFACES
-	float minz[2]={1.0,1.8};
-	float maxz[2]={1.1,1.85};
+	float minz[2]={0.9,1.8};
+	float maxz[2]={1.2,1.85};
 	float *originalZ;
 	#endif
 	float minvel=mod2d_getlayervmin(mod,itf);
@@ -113,7 +113,7 @@ VFSA disturb parameters step.
 
 		u=getRandomNumberBetween0and1();
 				
-		disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
+		/*disturbance = signal(u - 0.5) * temperature * (pow( (1+temperature),fabs(2*u-1) )-1);
 
 		disturbedZ[i] = originalZ[i] + (disturbance*scale);
 
@@ -127,8 +127,10 @@ VFSA disturb parameters step.
 
 			disturbedZ[i] = (maxz[itf]-minz[itf]) * getRandomNumberBetween0and1() + minz[itf];
 			
-		}
+		}*/
+		disturbedZ[i]=originalZ[i];
 	}
+	//mod2d_setinterfacesnodes(mod,itf,disturbedZ);
 	#endif
 }
 
