@@ -503,14 +503,19 @@ int main(int argc, char* argv[])
 
 	/* Generate optimal velocity model */
 	otsv[nsv-1]=vf;
+	sf_warning("teste");
 	updateVelocityModel(n,o,d,otsv,nsv,otsz,nsz,osz,dsz,slow,nm);
+	//for(im=0;im<nm;im++)
+	//	slow[im]=sqrt(1./(slow[im]*slow[im]));
 
 	/* Write velocity model file */
-	sf_floatwrite(slow,nm,velinv);
+	//sf_floatwrite(slow,nm,velinv);
 	
+	dumpfloat1("otsz",otsz,nsz);
 	for(im=0;im<ns;im++)
 		otangles[im]=otbeta[im]*RAD2DEG+180.;
 
+	sf_warning("teste");
 	/* Write velocity cubic spline function */
 	sf_floatwrite(otsv,nsv,vspline);
 	sf_floatwrite(otsz,nsz,zspline);
@@ -522,4 +527,5 @@ int main(int argc, char* argv[])
 	sf_floatwrite(otbeta,ns,betas_out);
 	sf_floatwrite(otangles,ns,angles_out);
 
+	sf_warning("final");
 }

@@ -115,10 +115,11 @@ they are interpolated using natural cubic spline interpolation.
 		for(j=0;j<nx;j++) szz[j]=sz[(i*nx)+j];
 		calculateSplineCoeficients(nx,x,szz,coef[i]);
 	}
-
+sf_warning("oi");
 	zi = sf_floatalloc(nsv);
 	zi[nsv-1] = (n[0]-1)*d[0]+o[0];
 
+sf_warning("oi");
 	/* Calculate velocity function */
         for(j=0;j<n[1];j++){
 
@@ -134,6 +135,7 @@ they are interpolated using natural cubic spline interpolation.
                 } /* Loop over depth */
 	} /* Loop over distance */
 
+sf_warning("fim");
 	free(x);
 }
 

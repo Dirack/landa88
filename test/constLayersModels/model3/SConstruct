@@ -317,8 +317,8 @@ layers2 = ((1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2),
 
 Flow('sz_2',None,
 	'''
-	math n1=11 d1=1 o1=-2 n2=2 o2=1. d2=0.85 output="x2" |
-	put n2=1 n1=22
+	math n1=21 d1=0.5 o1=-2 n2=2 o2=1. d2=0.85 output="x2" |
+	put n2=1 n1=42
 	''')
 
 #Flow('sz_1',None,'math n1=11 d1=1 o1=-2 output="1.8"')
