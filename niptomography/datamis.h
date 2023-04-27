@@ -3,7 +3,7 @@
 #include "dynamic.h"
 #include "interface2d.h"
 #define DT 0.001
-#define OFFSET_APERTURE 50
+#define OFFSET_APERTURE 101
 
 #ifndef __DATAMIS_H__
 #define __DATAMIS_H__
@@ -42,9 +42,20 @@ If cds parameter is true, it uses the non-hyperbolic CRS formula with CDS condit
 		c1 = (d+h)/RNIP;
 		c2 = (d-h)/RNIP;
 		alpha = sin(BETA)/RNIP;
-		t = (t0-2*RNIP/v0)+(RNIP/v0)*sqrt(1-2*alpha*(d+h)+c1*c1)+(RNIP/v0)*sqrt(1-2*alpha*(d-h)+c2*c2);
+		if(alpha <= 0.001 && alpha >= -0.001){
+			t = (t0-2*RNIP/v0)+(2*RNIP/v0)*sqrt(1+h*h/(RNIP*RNIP));
+		}else{
+			t = (t0-2*RNIP/v0)+(RNIP/v0)*sqrt(1-2*alpha*(d+h)+c1*c1)+(RNIP/v0)*sqrt(1-2*alpha*(d-h)+c2*c2);
+		}
+
 	}
 	return t;
+}
+
+float nmo(float t0, float v0, float d, float h, float BETA, float RNIP){
+	float t;
+	t = (t0*t0+(2*sin(BETA)*d/v0))*(t0*t0+(2*sin(BETA)*d/v0))+(2*t0*cos(BETA)*cos(BETA)/(RNIP*v0))*(d*d+h*h);
+	return sqrt(t);
 }
 
 int stackOverCRETimeCurve(
@@ -76,7 +87,7 @@ Note: sumAmplitudes and sumAmplitudes2 variables are changed inside function
 
 	for(ih=0; ih < OFFSET_APERTURE; ih++){
 
-		h = ih*d[1]+o[1];
+		h = ih*d[1]+o[1]; h/=2;
 
 		if(alpha <= 0.001 && alpha >= -0.001){
 			m = m0;
@@ -84,16 +95,17 @@ Note: sumAmplitudes and sumAmplitudes2 variables are changed inside function
 			m = m0 + (1/(2*alpha)) * (1 - sqrt(1 + 4 * alpha * alpha * h * h));
 		}
 
-		im = (int) round(m/d[2]);
+		im = (int) round((m-o[2])/d[2]);
 
 		tetai = (int) round((double) creTimeApproximation(h,m,v0,t0,m0,RNIP,BETA,false)/d[0]);
-		//printf("%f\n",creTimeApproximation(h,m,v0,t0,m0,RNIP,BETA,false));
+		printf("%f\n",creTimeApproximation(h,m,v0,t0,m0,RNIP,BETA,false));
+		//tetai = (int) round((double) (nmo(t0,v0,m-m0,h,BETA,RNIP)-o[0])/d[0]);
+		//printf("%f\n",nmo(t0,v0,m-m0,h,BETA,RNIP));
 
 		if(tetai > n[0] || tetai < 0){
 			sa += 0.;
 		}else{
-			sa += fabs(data[im][ih][tetai]);
-			//printf("%f\n",data[im][ih][tetai]);
+			sa += data[im][ih][tetai];
 		}
 
 		sa2 += (sa*sa);
@@ -101,11 +113,10 @@ Note: sumAmplitudes and sumAmplitudes2 variables are changed inside function
 
 	} /* loop over half-offset */
 
-	//printf("sa=%f sa2=%f\n",sa,sa2);
 	*sumAmplitudes = sa;
 	*sumAmplitudes2 = sa2;
 
-	return numSamples;
+	return numSamples-1;
 }
 
 #endif

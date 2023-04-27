@@ -1,0 +1,13 @@
+all:	build keep
+
+build:	SConstruct
+	scons -j4 interpolatedDataCube2.rsf && scons stackedSection.rsf nm0=1 nt0=10
+
+keep:	backup
+	<interpolatedDataCube2.rsf sfput --out=stdout > backup/interpolatedDataCube.rsf && <stackedSection.rsf sfput --out=stdout > backup/stackedSection.rsf && <parametersCube.rsf sfput --out=stdout > backup/parametersCube.rsf
+
+backup:
+	mkdir -p backup
+
+clean:	SConstruct
+	scons -c

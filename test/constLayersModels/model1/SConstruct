@@ -138,23 +138,32 @@ nt0 = int(ARGUMENTS.get('nt0',251))
 om0 = float(ARGUMENTS.get('om0',1.5))
 dm0 = float(ARGUMENTS.get('dm0',0.025))
 nm0 = int(ARGUMENTS.get('nm0',121))
-aperture = int(ARGUMENTS.get('aperture',30))
+aperture = int(ARGUMENTS.get('aperture',50))
 repeat = int(ARGUMENTS.get('repeat',4))
 itmax = int(ARGUMENTS.get('itmax',500))
 cds = bool(ARGUMENTS.get('cds',False))
 
 Flow(parametersCube,interpolatedDataCube,
         '''
-        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=%d itmax=%d verb=y rnmin=2.5 rnmax=10 rnipmin=1.8 rnipmax=5
+        vfsacrsnh nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g v0=%g repeat=%d itmax=%d verb=y rnmin=2 rnmax=10 rnipmin=0.3 rnipmax=3 half=n
         '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,repeat,itmax))
+
+Flow('parametersCube2',parametersCube,
+	'''
+	parsmoother rect1=5 rect2=5 smin=0. f=1. dbeta=0.5
+	''')
+
+parametersCube='parametersCube2'
 
 Flow('creTrajectories',[interpolatedDataCube,parametersCube],
         '''
+	put d2=0.0125 |
         cretrajec param=${SOURCES[1]} nm0=%d om0=%g dm0=%g nt0=%d ot0=%g dt0=%g verb=y 
         '''%(nm0,om0,dm0,nt0,ot0,dt0))
 
 Flow(['cregathers','mhCoordinates'],[interpolatedDataCube,'creTrajectories'],
         '''
+	put d2=0.0125 |
         getcregather cremh=${SOURCES[1]} m=${TARGETS[1]} aperture=%d nm0=%g nt0=%g |
         put label1=Time unit1=s label2=Offset unit2=Km label3=t0 unit3=s
         label4=m0 unit4=Km n3=%d d3=%g o3=%g n4=%d d4=%g o4=%g
@@ -167,13 +176,6 @@ Flow('cretimecurves',['mhCoordinates',parametersCube],
         n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
         '''%(nm0,om0,dm0,nt0,ot0,dt0,v0,nt0,dt0,ot0,nm0,dm0,om0))
 
-#Flow('parametersCube2',parametersCube,
-#	'''
-#	put label2=t0 label3=m0 unit2=Km unit3=Km
-#	n2=%d d2=%g o2=%g n3=%d d3=%g o3=%g
-#	'''%(nt0,dt0,ot0,nm0,dm0,om0))
-
-#parametersCube='parametersCube2'
 
 Flow(stackedSection,['cregathers','cretimecurves'],
         '''

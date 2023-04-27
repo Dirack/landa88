@@ -1,0 +1,11 @@
+from rsf.proj import *
+
+Plot('cmp','grey')
+
+Flow('times','times.asc','dd form=native type=float')
+
+Plot('times','graph plotcol=2 min1=0 max1=4 min2=0 max2=4 yreverse=y wanttitle=n wantaxis=n')
+
+Result('teste','cmp times','Overlay')
+
+End()

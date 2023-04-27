@@ -12,38 +12,40 @@
 # 
 # License: GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
-TESTS=test_interface2d.x test_raytrace.x test_tomography.x test_model2d.x test_layer2d.x
+SRC := tomography.c raytrace.c grid2.c  atela.c dynamic.c interface2d.c layer2d.c model2d.c
+TESTS := $(patsubst %.c,%.x,$(wildcard test_*.c))
+LANDA88 := $(RSFSRC)/user/landa88
+LIB := atestlib
+UNITY := Unity/unity.c
+GCC := gcc
+GCC_OPT := $(UNITY) -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L. -L$$RSFSRC/lib -lrsf -lm -l$(LIB)
+DEP := $(addprefix $(LANDA88)/, $(SRC))
+
+# Function to compile and run a test
+# The test executable will be removed after running
+define RUN_TEST
+	$(GCC) $^ $(GCC_OPT) -o $@
+	./$@; rm $@
+endef
 
 all:	$(TESTS)
 
-test_interface2d.x:	test_interface2d.c ../../interface2d.c Unity/unity.c
-	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
-	./$@ && rm $@
+# Create a static lib with dependencies
+lib$(LIB).a:	$(DEP)
+	gcc -c $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -lm -lrsf
+	ar -rc $@ $(patsubst %.c,%.o,$^)
+	ranlib $@
 
-test_raytrace.x:	test_raytrace.c ../../raytrace.c ../../grid2.c ../../atela.c ../../dynamic.c ../../interface2d.c Unity/unity.c
-	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
-	./$@ && rm $@
-
-test_tomography.x:	test_tomography.c ../../tomography.c ../../raytrace.c ../../grid2.c ../../atela.c ../../dynamic.c ../../interface2d.c Unity/unity.c
-	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
-	./$@ && rm $@
-
-test_model2d.x:	test_model2d.c ../../interface2d.c ../../layer2d.c ../../model2d.c Unity/unity.c
-	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf
-	./$@ && rm $@
-
-test_layer2d.x:	test_layer2d.c ../../interface2d.c ../../layer2d.c Unity/unity.c
-	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf
-	./$@ && rm $@
-
-test_setup.x:	test_setup.c ../../tomography.c ../../raytrace.c ../../grid2.c ../../atela.c ../../dynamic.c ../../interface2d.c Unity/unity.c
-	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
-	./$@ && rm $@
+# Rule for running a test
+%.x:	%.c lib$(LIB).a
+	$(call RUN_TEST)
 
 clean:
-	rm *.x
+	rm -f *.o *.x lib$(LIB).a
 
 help:
-	@echo "Use 'make' to run the tests"
+	@echo "Use 'make' to run all the tests"
+	@echo "Or run 'make test_filename.x' to run a specific test called filename"
+	@echo "Tests available: $(TESTS)"
 
-.PHONY: $(TESTS)
+.PHONY: clean help

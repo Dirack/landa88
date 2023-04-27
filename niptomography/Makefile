@@ -39,7 +39,7 @@ test_rungekutta.x:	test_rungekutta.c ../grid2.c ../atela.c ../interface2d.c Unit
 
 test_semblance.x:	test_semblance.c ../grid2.c ../atela.c ../dynamic.c ../interface2d.c Unity/unity.c
 	gcc $^ -I$$RSFSRC/include -I$$RSFSRC/user/landa88 -L$$RSFSRC/lib -o $@ -lrsf -lm
-	./$@ > times.asc && echo "n1=101 d1=0.025 o1=0 n2=400 d2=1 o2=0 data_format=ascii_float in=times.asc" >> times.asc && rm $@
+	./$@ > times.asc && echo "n1=101 d1=0.0125 o1=0 n2=1 d2=1 o2=0 data_format=ascii_float in=times.asc" >> times.asc && rm $@
 	python3 plotsemb.py; python3 plotrnip.py
 
 .PHONY:	$(TESTS)
